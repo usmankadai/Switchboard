@@ -21,6 +21,8 @@ function mockFetch(...responses: (Response | Error)[]) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 describe("fetchJson", () => {
@@ -75,5 +77,23 @@ describe("fetchJson", () => {
     const error = await fetchJson(URL_WITH_POSTCODE, options).catch((caught: unknown) => caught);
     expect(String((error as Error).message)).not.toContain("SW1A");
     expect(String((error as Error).message)).toBe("postcodes.io validate returned 500");
+  });
+});
+
+describe("upstream call logging", () => {
+  it("logs one line per real request, with no URL, only when switched on", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    mockFetch(json({}));
+    await fetchJson(URL_WITH_POSTCODE, options);
+    expect(log).not.toHaveBeenCalled();
+
+    vi.stubEnv("LOG_UPSTREAM_CALLS", "1");
+    mockFetch(json({}, 503), json({}));
+    await fetchJson(URL_WITH_POSTCODE, options);
+    expect(log.mock.calls.map((call) => call[0])).toEqual([
+      '{"type":"upstream","service":"postcodes.io","endpoint":"validate"}',
+      '{"type":"upstream","service":"postcodes.io","endpoint":"validate"}',
+    ]);
   });
 });

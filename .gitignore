@@ -49,3 +49,6 @@ next-env.d.ts
 
 # lighthouse ci
 /.lighthouseci/
+
+# load test output
+/load-tests/results/

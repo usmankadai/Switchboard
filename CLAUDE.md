@@ -33,7 +33,7 @@ It is a portfolio project built to demonstrate the skills of a Frontend Engineer
 - React Testing Library with Vitest for unit and component tests
 - Playwright for end-to-end tests, with `@axe-core/playwright` for accessibility checks
 - Sentry (errors, off unless `NEXT_PUBLIC_SENTRY_DSN` is set), Vercel Speed Insights (field Core Web Vitals), Lighthouse CI (lab budgets)
-- Planned: k6 (load test)
+- k6 (load test, `load-tests/`)
 
 Package manager: pnpm. `graphql` is pinned to v16 because Apollo's packages do not yet support v17.
 
@@ -50,9 +50,8 @@ pnpm test             # Vitest + RTL (single run)
 pnpm test:watch       # Vitest in watch mode
 pnpm test:e2e         # Playwright (includes axe checks)
 pnpm lhci             # Lighthouse CI budgets (run after pnpm build)
+pnpm load             # k6 load test against a local build (run after pnpm build)
 ```
-
-Added later: `pnpm load` (k6).
 
 Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test`. For changes to the journey, also run `pnpm test:e2e`.
 
@@ -71,6 +70,7 @@ Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test
   /schema               # SDL type definitions (in .ts files with a /* GraphQL */ tag)
   /resolvers            # resolvers, one file per domain
   /datasources          # Octopus and postcodes.io clients, with caching
+  /pricing              # one tariff in one region, priced and cached per hour
 /components             # shared UI components (accessible form kit lives here)
 /lib                    # pure logic: cost estimation, usage models, rate selection, formatting
 /generated              # codegen output, never edit by hand
@@ -100,6 +100,7 @@ The REST API needs several calls to build one comparison screen (region lookup, 
 ### Caching and performance
 
 - Cache Components is on. Datasource functions use `'use cache: remote'` plus an explicit `cacheLife` profile: plain `'use cache'` is per-instance memory, which barely survives on serverless hosting. Do not use the old `export const revalidate` route config. See ADR 2.
+- **Cache results, not just data.** Resolvers get prices from the pricing layer (`graphql/pricing`), which prices one tariff in one region per hour and caches that small result. Do not do per-request work over raw cached data (the 1,440 Agile prices once cost 45ms of CPU per request and capped a server at about 20 requests a second). Per request, only do arithmetic for the customer's own inputs.
 - Upstream calls go through `graphql/datasources/http.ts`: 6s timeout, one retry for temporary failures, and error messages that name the endpoint, never the URL (URLs can contain postcodes).
 - Product list, product detail and region lookups change rarely: `cacheLife('days')` or longer.
 - Unit rates, standing charges and Agile prices: `cacheLife('hours')`. Agile prices for the next day are published each afternoon.
@@ -167,7 +168,7 @@ Polish beats breadth. Priority order when time is short:
 2. Signup step with validation, save and resume, and confirmation
 3. Caching, error handling and performance budgets
 4. Monitoring and funnel tracking
-5. Load test and its write-up in the README
+5. Load test and its write-up in the README (done)
 6. Nice to have: A/B test at the edge, Storybook for the form kit
 
 Never cut accessibility or tests to add a lower-priority feature.

@@ -70,12 +70,24 @@ async function attempt(url: string, { service, endpoint, timeoutMs = TIMEOUT_MS 
   }
 }
 
+/**
+ * Opt-in log of every real upstream request, used by the load test to show
+ * how few calls reach the upstream APIs. Endpoint names only, never URLs.
+ */
+function logUpstreamCall({ service, endpoint }: FetchJsonOptions) {
+  if (process.env.LOG_UPSTREAM_CALLS === "1") {
+    console.log(JSON.stringify({ type: "upstream", service, endpoint }));
+  }
+}
+
 export async function fetchJson(url: string, options: FetchJsonOptions): Promise<unknown> {
+  logUpstreamCall(options);
   const first = await attempt(url, options);
   if (first.ok) return first.body;
   if (!first.retryable) throw first.error;
 
   await wait(options.retryDelayMs ?? RETRY_DELAY_MS);
+  logUpstreamCall(options);
   const second = await attempt(url, options);
   if (second.ok) return second.body;
   throw second.error;

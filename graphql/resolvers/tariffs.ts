@@ -6,21 +6,17 @@ import type {
   TariffKind,
   TariffQuote,
 } from "@/generated/resolvers-types";
-import { estimateAnnualCostPence, summarisePrices } from "@/lib/estimate";
+import { estimateAnnualCostPence } from "@/lib/estimate";
 import { normalisePostcode } from "@/lib/postcode";
 import {
   selectComparisonProducts,
   type ComparisonProduct,
 } from "@/lib/products";
-import { selectCurrentRate, type RateRecord } from "@/lib/rates";
 import { REGION_NAMES } from "@/lib/regions";
 import { MAX_ANNUAL_KWH } from "@/lib/usage";
-import { recentDaysWindow, todayWindow } from "@/lib/windows";
 import type { GraphQLContext } from "../context";
 import { UpstreamError } from "../datasources/types";
-
-/** How much price history to average for tariffs whose price varies. */
-export const RECENT_PRICE_DAYS = 30;
+import { startOfHour } from "../pricing/tariffPricing";
 
 
 export const ErrorCode = {
@@ -78,74 +74,43 @@ async function resolveRegion(
   });
 }
 
-/** Unit rates in the form the estimate maths expects (Direct Debit only). */
-function toHalfHourlyPrices(records: readonly RateRecord[]) {
-  return records
-    .filter(
-      (record) =>
-        record.paymentMethod === null ||
-        record.paymentMethod === "DIRECT_DEBIT",
-    )
-    .map((record) => ({
-      validFrom: record.validFrom,
-      pencePerKwh: record.valueIncVat,
-    }));
-}
-
 /**
  * Build one quote, or return null when this tariff cannot be priced in this
- * region (the UI then simply does not show it).
+ * region (the UI then simply does not show it). The prices come from the
+ * pricing layer (cached per tariff, region and hour); only the cost for this
+ * usage is worked out per request.
  */
 async function buildQuote(
   { kind, product }: ComparisonProduct,
   regionCode: string,
   annualKwh: number,
-  { dataSources, now }: GraphQLContext,
+  { pricing, now }: GraphQLContext,
 ): Promise<TariffQuote | null> {
-  const energy = dataSources.energy;
-  const regional = await energy.getRegionalTariff(product.code, regionCode);
-  if (!regional) return null;
-
   const priceVaries = kind === "AGILE" || kind === "TRACKER";
-  const today = todayWindow(now);
-
-  const [standingCharges, unitRates] = await Promise.all([
-    energy.getStandingCharges(product.code, regional.tariffCode, today),
-    energy.getUnitRates(
-      product.code,
-      regional.tariffCode,
-      priceVaries ? recentDaysWindow(now, RECENT_PRICE_DAYS) : today,
-    ),
-  ]);
-
-  const standingChargePencePerDay = selectCurrentRate(standingCharges, now);
-  const recentPrices = priceVaries
-    ? summarisePrices(toHalfHourlyPrices(unitRates))
-    : null;
-  const unitRatePence = priceVaries
-    ? (recentPrices?.averagePence ?? null)
-    : selectCurrentRate(unitRates, now);
-
-  if (standingChargePencePerDay === null || unitRatePence === null) {
-    return null;
-  }
+  const prices = await pricing.getTariffPrices({
+    productCode: product.code,
+    priceVaries,
+    regionCode,
+    at: startOfHour(now),
+  });
+  if (!prices) return null;
 
   return {
-    id: regional.tariffCode,
+    id: prices.tariffCode,
     kind,
     productCode: product.code,
     displayName: product.displayName,
     termMonths: product.term,
-    exitFeePence: regional.exitFeePence,
-    unitRatePence,
-    standingChargePencePerDay,
+    exitFeePence: prices.exitFeePence,
+    unitRatePence: prices.unitRatePence,
+    standingChargePencePerDay: prices.standingChargePencePerDay,
     estimatedAnnualCostPence: estimateAnnualCostPence({
-      unitRatePence,
-      standingChargePencePerDay,
+      unitRatePence: prices.unitRatePence,
+      standingChargePencePerDay: prices.standingChargePencePerDay,
       annualKwh,
     }),
     priceVaries,
-    recentPrices,
+    recentPrices: prices.recentPrices,
   };
 }
 

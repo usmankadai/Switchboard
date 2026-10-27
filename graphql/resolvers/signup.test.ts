@@ -28,6 +28,7 @@ async function startSwitch(input: Record<string, unknown>) {
       contextValue: {
         // The mutation never needs upstream data.
         dataSources: { energy: {} as EnergyDataSource },
+        pricing: { getTariffPrices: async () => null },
         now: new Date("2026-10-27T12:00:00Z"),
       },
     },

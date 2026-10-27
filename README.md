@@ -55,6 +55,7 @@ pnpm dev
 | `pnpm test` | Unit, component and resolver tests (Vitest) |
 | `pnpm test:e2e` | Playwright journey tests with axe accessibility scans |
 | `pnpm lhci` | Lighthouse CI performance budgets (run after `pnpm build`) |
+| `pnpm load` | k6 load test against a local production build (run after `pnpm build`; needs [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)) |
 
 ## Performance
 
@@ -69,6 +70,39 @@ Lighthouse CI, median of 5 runs, mobile with slow 4G and a 4x CPU slowdown appli
 | Sign up | 1.36s | 36ms | 0 | 227 KB |
 
 Budgets: LCP 2.5s, TBT 200ms, CLS 0.1, JavaScript 250 KB, accessibility 100. All pages score 100 for accessibility. See [ADR 2](docs/decisions/0002-caching-resilience-and-performance-budgets.md) for why throttling is applied rather than simulated.
+
+## Load test
+
+The question was not "how many requests can it take?" but **"does the caching strategy protect the upstream API during a spike?"** The Octopus API is a free public service we do not own, so if traffic reached it in proportion to our visitors, a price-change-day spike would hurt both of us.
+
+[`load-tests/comparison.js`](load-tests/comparison.js) simulates that spike on the tariff comparison (the busiest, most expensive request): a ramp to a peak rate held for 60 seconds, across all 14 regions and 3 typical usages, plus a steady 2 postcode lookups a second. `pnpm load` runs it against a local production build and counts every request that reached an upstream API.
+
+### Results
+
+Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine:
+
+| | Before the fix | After, peak 200/s | After, peak 800/s |
+| --- | --- | --- | --- |
+| Requests | 16,070 | 16,312 | 61,007 |
+| Failed | **84%** | 0% | 0% |
+| Comparison p95 | 2.93s | 3.7ms | 2.1ms |
+| Comparison p99 | 9.88s | 16.9ms | 7.5ms |
+| Postcode lookup p95 | 5.6s | 5.8ms | 5.8ms |
+| Requests reaching upstream APIs | 137 | 137 | 137 |
+
+### What it showed
+
+1. **The caching protected the upstream API from the start.** In every run, 137 requests reached Octopus and postcodes.io: one per distinct piece of data (14 regions × 3 tariffs × 3 endpoints, the product list and the 5 postcodes), whatever the traffic. At 800/s that is 1 upstream call per 445 requests.
+2. **But our own server fell over.** The first run failed 84% of requests. A single warm comparison took about 45ms of CPU: it read 30 days of half-hourly Agile prices (1,440 records per region) from the cache and averaged them again on every request. That capped one process at about 20 comparisons a second.
+3. **The fix was to cache the result, not just the data.** A pricing layer ([`graphql/pricing`](graphql/pricing)) now prices one tariff in one region once an hour and caches that small result. Each request only does the cost arithmetic for its usage. A warm comparison went from about 45ms to under 3ms, with identical prices, and the same process then handled 800 comparisons a second with no failures.
+4. **It sends requests exactly as the browser does,** including the JSON content type Apollo Client puts on GET requests. That header once made every cached comparison fail with a server error (the Playwright tests caught it before release), so the load test would catch it coming back.
+
+### What this does and does not prove
+
+- It verifies the caching strategy and the cost of each request. It is not a production capacity figure.
+- Locally there is no CDN, and `'use cache: remote'` falls back to in-memory. In production the CDN answers most repeat comparisons before they reach the server, and the shared remote cache adds a network round trip on each miss.
+- k6 and the server shared one machine, so the latency figures are optimistic about the network and pessimistic about CPU.
+- Pointing the test at a deployment mostly measures the CDN and counts against the host's limits, so the script defaults to localhost.
 
 ## Decisions worth knowing
 
@@ -92,5 +126,5 @@ Budgets: LCP 2.5s, TBT 200ms, CLS 0.1, JavaScript 250 KB, accessibility 100. All
 - [x] Signup: demo address finder with region check, startSwitch mutation, confirmation
 - [x] Caching and resilience: shared server cache, CDN caching, timeouts and retries, partial results
 - [x] Performance budgets (Lighthouse CI) and monitoring (Sentry, Speed Insights, anonymous funnel events)
-- [ ] Load test write-up (k6)
+- [x] Load test (k6) and write-up
 - [ ] Funnel dashboard from the event logs

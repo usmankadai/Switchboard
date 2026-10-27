@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "lhci": "lhci autorun --config=lighthouserc.cjs"
+    "lhci": "lhci autorun --config=lighthouserc.cjs",
+    "load": "bash load-tests/run-local.sh"
   },
   "dependencies": {
     "@apollo/cache-control-types": "^1.0.3",

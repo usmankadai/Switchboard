@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { cdnCacheControl } from "@/graphql/cacheHeaders";
 import type { GraphQLContext } from "@/graphql/context";
 import { octopusDataSource } from "@/graphql/datasources/octopus";
+import { cachedTariffPricing } from "@/graphql/pricing/cachedTariffPricing";
 import { resolvers } from "@/graphql/resolvers";
 import { typeDefs } from "@/graphql/schema/typeDefs";
 
@@ -19,6 +20,7 @@ const handler = startServerAndCreateNextHandler<NextRequest, GraphQLContext>(
   {
     context: async () => ({
       dataSources: { energy: octopusDataSource },
+      pricing: cachedTariffPricing,
       now: new Date(),
     }),
   },

@@ -4,6 +4,7 @@ import type { ProductSummary } from "@/lib/products";
 import type { RateRecord } from "@/lib/rates";
 import type { GraphQLContext } from "../context";
 import { UpstreamError, type EnergyDataSource } from "../datasources/types";
+import { createTariffPricing } from "../pricing/tariffPricing";
 import { typeDefs } from "../schema/typeDefs";
 import { resolvers } from "./index";
 
@@ -101,7 +102,7 @@ const REGION = /* GraphQL */ `
 async function execute(variables: Record<string, unknown>, query = COMPARISON) {
   const response = await server.executeOperation(
     { query, variables },
-    { contextValue: { dataSources: { energy }, now } },
+    { contextValue: { dataSources: { energy }, pricing: createTariffPricing(energy), now } },
   );
   if (response.body.kind !== "single") throw new Error("Expected a single result");
   return { result: response.body.singleResult, cacheControl: response.http.headers.get("cache-control") };
