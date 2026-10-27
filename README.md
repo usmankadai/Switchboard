@@ -72,5 +72,5 @@ pnpm dev
 - [x] Usage step: figure from a bill or a three-question estimate, refilled on return
 - [x] Tariff comparison: live prices, cheapest label, Agile explainer, retry on outage
 - [ ] Agile price chart with a data table alternative
-- [ ] Signup with save and resume, and confirmation
+- [x] Signup: demo address finder with region check, startSwitch mutation, confirmation
 - [ ] Monitoring, performance budgets and load test write-up

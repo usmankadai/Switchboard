@@ -12,6 +12,20 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  /**
+   * Demo only. Checks the signup details and returns a made-up reference.
+   * Nothing is stored, sent or logged, and no account is created.
+   */
+  startSwitch: StartSwitchResult;
+};
+
+
+export type MutationStartSwitchArgs = {
+  input: StartSwitchInput;
+};
+
 export type PriceSummary = {
   __typename?: 'PriceSummary';
   /** Usage-weighted average, pence per kWh. */
@@ -52,6 +66,22 @@ export type Region = {
   code: Scalars['ID']['output'];
   /** Friendly name, for example London. */
   name: Scalars['String']['output'];
+};
+
+export type StartSwitchInput = {
+  email: Scalars['String']['input'];
+  fullName: Scalars['String']['input'];
+  /** Region letter from the postcode step. */
+  regionCode: Scalars['ID']['input'];
+  /** The chosen tariff's id from tariffComparison. */
+  tariffId: Scalars['ID']['input'];
+};
+
+export type StartSwitchResult = {
+  __typename?: 'StartSwitchResult';
+  /** A made-up reference, for example SB-3F9A1C2E. */
+  reference: Scalars['ID']['output'];
+  tariffId: Scalars['ID']['output'];
 };
 
 export type TariffComparison = {
@@ -173,9 +203,12 @@ export type ResolversTypes = {
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   PriceSummary: ResolverTypeWrapper<PriceSummary>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   Region: ResolverTypeWrapper<Region>;
+  StartSwitchInput: StartSwitchInput;
+  StartSwitchResult: ResolverTypeWrapper<StartSwitchResult>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   TariffComparison: ResolverTypeWrapper<TariffComparison>;
   TariffKind: TariffKind;
@@ -188,12 +221,19 @@ export type ResolversParentTypes = {
   Float: Scalars['Float']['output'];
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
+  Mutation: Record<PropertyKey, never>;
   PriceSummary: PriceSummary;
   Query: Record<PropertyKey, never>;
   Region: Region;
+  StartSwitchInput: StartSwitchInput;
+  StartSwitchResult: StartSwitchResult;
   String: Scalars['String']['output'];
   TariffComparison: TariffComparison;
   TariffQuote: TariffQuote;
+};
+
+export type MutationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  startSwitch?: Resolver<ResolversTypes['StartSwitchResult'], ParentType, ContextType, RequireFields<MutationStartSwitchArgs, 'input'>>;
 };
 
 export type PriceSummaryResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['PriceSummary'] = ResolversParentTypes['PriceSummary']> = {
@@ -211,6 +251,11 @@ export type QueryResolvers<ContextType = GraphQLContext, ParentType extends Reso
 export type RegionResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Region'] = ResolversParentTypes['Region']> = {
   code?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
+export type StartSwitchResultResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['StartSwitchResult'] = ResolversParentTypes['StartSwitchResult']> = {
+  reference?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  tariffId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 };
 
 export type TariffComparisonResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['TariffComparison'] = ResolversParentTypes['TariffComparison']> = {
@@ -235,9 +280,11 @@ export type TariffQuoteResolvers<ContextType = GraphQLContext, ParentType extend
 };
 
 export type Resolvers<ContextType = GraphQLContext> = {
+  Mutation?: MutationResolvers<ContextType>;
   PriceSummary?: PriceSummaryResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Region?: RegionResolvers<ContextType>;
+  StartSwitchResult?: StartSwitchResultResolvers<ContextType>;
   TariffComparison?: TariffComparisonResolvers<ContextType>;
   TariffQuote?: TariffQuoteResolvers<ContextType>;
 };

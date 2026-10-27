@@ -8,11 +8,13 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
    */
   busy?: boolean;
   busyLabel?: string;
+  variant?: "primary" | "secondary";
 };
 
 export function Button({
   busy = false,
   busyLabel,
+  variant = "primary",
   children,
   type = "button",
   onClick,
@@ -22,7 +24,9 @@ export function Button({
   return (
     <button
       type={type}
-      className={[styles.button, className].filter(Boolean).join(" ")}
+      className={[styles.button, variant === "secondary" ? styles.buttonSecondary : null, className]
+        .filter(Boolean)
+        .join(" ")}
       aria-disabled={busy || undefined}
       onClick={(event) => {
         if (busy) {

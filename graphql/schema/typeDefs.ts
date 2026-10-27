@@ -12,6 +12,29 @@ export const typeDefs = /* GraphQL */ `
     tariffComparison(regionCode: ID!, annualKwh: Int!): TariffComparison!
   }
 
+  type Mutation {
+    """
+    Demo only. Checks the signup details and returns a made-up reference.
+    Nothing is stored, sent or logged, and no account is created.
+    """
+    startSwitch(input: StartSwitchInput!): StartSwitchResult!
+  }
+
+  input StartSwitchInput {
+    fullName: String!
+    email: String!
+    "Region letter from the postcode step."
+    regionCode: ID!
+    "The chosen tariff's id from tariffComparison."
+    tariffId: ID!
+  }
+
+  type StartSwitchResult {
+    "A made-up reference, for example SB-3F9A1C2E."
+    reference: ID!
+    tariffId: ID!
+  }
+
   type Region {
     "Region letter, for example C."
     code: ID!

@@ -151,7 +151,7 @@ Target WCAG 2.2 AA on every page.
 
 ## Privacy, saving progress and monitoring
 
-- **Save and resume** stores only non-personal journey data in `localStorage`: postcode region code, usage answers, annual kWh and chosen tariff. Never store names, emails, phone numbers, addresses or full postcodes there. Personal details live in component state for the current page only.
+- **Save and resume** stores only non-personal journey data in `localStorage`: postcode region code, usage answers, annual kWh, chosen tariff and the demo reference number. Never store names, emails, phone numbers, addresses or full postcodes there. Personal details live in component state for the current page only, and are cleared from state after a successful submit (Next.js keeps the hidden page alive). The `startSwitch` mutation checks them with the same `lib/signup-form.ts` rules as the form, then discards them: never store, log or echo them in errors.
 - Sentry captures client and server errors. Do not send personal data (names, emails, addresses, postcodes) to Sentry; scrub them in `beforeSend`.
 - Track journey funnel events (step viewed, step completed, step abandoned) with anonymous identifiers only.
 

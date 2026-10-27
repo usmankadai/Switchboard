@@ -91,3 +91,9 @@ export const comparisonReply = {
     },
   },
 };
+
+export const startSwitchReply = (tariffId: string) => ({
+  data: {
+    startSwitch: { __typename: "StartSwitchResult", reference: "SB-3F9A1C2E", tariffId },
+  },
+});

@@ -71,7 +71,7 @@ test.describe("tariff comparison", () => {
 
     await expect(page).toHaveURL(/\/signup$/);
     await expect(page).toHaveTitle("Sign up | Switchboard");
-    await expect(page.getByRole("heading", { level: 1, name: "Sign up" })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 1, name: "Your details" })).toBeFocused();
     // Read from Apollo's cache, so no second comparison request is needed.
     await expect(page.getByText("You chose Agile Octopus, estimated at £899 a year.")).toBeVisible();
     await expectNoAxeViolations(page);

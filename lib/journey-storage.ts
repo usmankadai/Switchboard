@@ -19,6 +19,8 @@ export type SavedJourney = {
   usage?: SavedUsage;
   /** The chosen tariff's id from the comparison. */
   tariffId?: string;
+  /** The made-up reference from a completed demo signup. Not personal data. */
+  reference?: string;
 };
 
 /** Bump the version if the shape changes, so old data is ignored, not misread. */
@@ -54,6 +56,9 @@ export function sanitiseJourney(value: unknown): SavedJourney {
   if (usage) journey.usage = usage;
   if (typeof raw.tariffId === "string" && raw.tariffId.length <= 64) {
     journey.tariffId = raw.tariffId;
+  }
+  if (typeof raw.reference === "string" && /^SB-[0-9A-F]{8}$/.test(raw.reference)) {
+    journey.reference = raw.reference;
   }
   return journey;
 }
