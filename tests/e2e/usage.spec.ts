@@ -1,10 +1,12 @@
 import type { Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, test } from "./fixtures";
+import { comparisonReply, mockGraphQL, regionReply } from "./graphqlMock";
 
 const STORAGE_KEY = "switchboard:journey:v1";
 
 /** Start on the usage step as someone who has already given their postcode. */
 async function startWithRegion(page: Page, saved: Record<string, unknown> = {}) {
+  await mockGraphQL(page, { TariffComparison: comparisonReply });
   await page.goto("/");
   await page.evaluate(
     ([key, value]) => localStorage.setItem(key, value),
@@ -88,13 +90,10 @@ test.describe("usage step", () => {
 
 test.describe("quote journey", () => {
   test("goes from the landing page to the tariffs step", async ({ page }) => {
-    await page.route("**/api/graphql", (route) =>
-      route.fulfill({
-        json: {
-          data: { region: { __typename: "Region", code: "N", name: "South Scotland" } },
-        },
-      }),
-    );
+    await mockGraphQL(page, {
+      RegionLookup: regionReply("N", "South Scotland"),
+      TariffComparison: comparisonReply,
+    });
 
     await page.goto("/");
     await page.getByRole("link", { name: "Start now" }).click();

@@ -1,0 +1,137 @@
+/* The comparison is wider than a single form column, so it opts out of the
+   journey's reading width. */
+.wide {
+  max-width: none !important;
+}
+
+.cards {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius);
+}
+
+.badge {
+  align-self: flex-start;
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  background: var(--colour-accent);
+  color: var(--colour-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cardHeading {
+  font-size: 1.375rem;
+  margin-bottom: var(--space-2);
+}
+
+.kind {
+  color: var(--colour-text-muted);
+  font-size: 1rem;
+}
+
+.cost {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-2);
+}
+
+.costLabel {
+  font-size: 1rem;
+  color: var(--colour-text-muted);
+}
+
+.costFigure {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.costMonthly {
+  font-size: 1rem;
+}
+
+.note {
+  font-size: 1rem;
+  color: var(--colour-text-muted);
+}
+
+.details {
+  margin: 0 0 var(--space-4);
+  font-size: 1rem;
+}
+
+.details div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--colour-border);
+}
+
+.details dt {
+  font-weight: 700;
+}
+
+.details dd {
+  margin: 0;
+  text-align: right;
+}
+
+/* Keep the buttons lined up along the bottom of each card. */
+.choose {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.explainer {
+  max-width: var(--measure);
+  margin-bottom: var(--space-5);
+}
+
+.explainer h3 {
+  font-size: 1.125rem;
+  margin-top: var(--space-4);
+}
+
+.explainer ul {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-4);
+}
+
+.status {
+  margin-bottom: var(--space-4);
+}
+
+.problem {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 5px solid var(--colour-error);
+  background: var(--colour-surface);
+}
+
+.problem:focus {
+  outline: 3px solid var(--colour-focus);
+}
+
+.problem h2 {
+  font-size: 1.375rem;
+}
+
+.checkedAt {
+  color: var(--colour-text-muted);
+  font-size: 1rem;
+}

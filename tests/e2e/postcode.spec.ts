@@ -1,40 +1,21 @@
 import type { Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, test } from "./fixtures";
+import { errorReply, mockGraphQL, regionReply } from "./graphqlMock";
 
 const STORAGE_KEY = "switchboard:journey:v1";
 
-type GraphQLReply = Record<string, unknown>;
+const london = regionReply("C", "London");
 
-/** Answer the browser's GraphQL calls, so tests do not depend on live APIs. */
-async function mockGraphQL(page: Page, ...replies: GraphQLReply[]) {
-  const queue = [...replies];
-  await page.route("**/api/graphql", async (route) => {
-    const reply = queue.length > 1 ? queue.shift()! : queue[0];
-    await route.fulfill({ json: reply });
-  });
-}
+const notFound = errorReply(
+  "We could not find that postcode. Check it and try again",
+  "POSTCODE_NOT_FOUND",
+  "postcode",
+);
 
-const london = { data: { region: { __typename: "Region", code: "C", name: "London" } } };
-
-const notFound = {
-  data: null,
-  errors: [
-    {
-      message: "We could not find that postcode. Check it and try again",
-      extensions: { code: "POSTCODE_NOT_FOUND", field: "postcode" },
-    },
-  ],
-};
-
-const upstreamDown = {
-  data: null,
-  errors: [
-    {
-      message: "We could not get prices right now. Please try again in a moment.",
-      extensions: { code: "UPSTREAM_UNAVAILABLE" },
-    },
-  ],
-};
+const upstreamDown = errorReply(
+  "We could not get prices right now. Please try again in a moment.",
+  "UPSTREAM_UNAVAILABLE",
+);
 
 const postcodeInput = (page: Page) =>
   page.getByRole("textbox", { name: "What is your postcode?" });
@@ -65,7 +46,7 @@ test.describe("postcode step", () => {
   });
 
   test("finds the region, saves only the region, and moves on", async ({ page }) => {
-    await mockGraphQL(page, london);
+    await mockGraphQL(page, { RegionLookup: london });
     await page.goto("/postcode");
 
     await postcodeInput(page).fill("sw1a1aa");
@@ -85,7 +66,7 @@ test.describe("postcode step", () => {
   });
 
   test("keeps the region after a refresh and when going back", async ({ page }) => {
-    await mockGraphQL(page, london);
+    await mockGraphQL(page, { RegionLookup: london });
     await page.goto("/postcode");
     await postcodeInput(page).fill("SW1A 1AA");
     await page.getByRole("button", { name: "Continue" }).click();
@@ -100,7 +81,7 @@ test.describe("postcode step", () => {
   });
 
   test("shows a working button after going back from the next step", async ({ page }) => {
-    await mockGraphQL(page, london);
+    await mockGraphQL(page, { RegionLookup: london });
     await page.goto("/postcode");
     await postcodeInput(page).fill("SW1A 1AA");
     await page.getByRole("button", { name: "Continue" }).click();
@@ -115,7 +96,7 @@ test.describe("postcode step", () => {
   });
 
   test("explains when a postcode does not exist", async ({ page }) => {
-    await mockGraphQL(page, notFound);
+    await mockGraphQL(page, { RegionLookup: notFound });
     await page.goto("/postcode");
     await postcodeInput(page).fill("ZZ1 1ZZ");
     await page.getByRole("button", { name: "Continue" }).click();
@@ -127,7 +108,7 @@ test.describe("postcode step", () => {
   });
 
   test("offers a retry when the service is down", async ({ page }) => {
-    await mockGraphQL(page, upstreamDown, london);
+    await mockGraphQL(page, { RegionLookup: [upstreamDown, london] });
     await page.goto("/postcode");
     await postcodeInput(page).fill("SW1A 1AA");
     await page.getByRole("button", { name: "Continue" }).click();

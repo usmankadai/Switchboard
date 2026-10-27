@@ -145,7 +145,7 @@ Target WCAG 2.2 AA on every page.
 - **Unit (Vitest):** all functions in `/lib`, especially cost estimation edge cases (negative prices, missing slots, clock changes).
 - **Component (RTL):** Client Components and synchronous Server Components only. Test behaviour as a user would: query by role and label, not test IDs or class names. Wrap Apollo components in `MockedProvider`.
 - **Async Server Components:** Vitest and RTL cannot render them (Next.js recommends end-to-end tests). Cover them with Playwright, and keep their logic thin by moving it into `/lib`.
-- **End-to-end (Playwright):** the happy path, validation errors, back-button and refresh behaviour, save and resume, and upstream API failure (mock with `page.route`).
+- **End-to-end (Playwright):** mock GraphQL by operation name with `tests/e2e/graphqlMock.ts` so runs never depend on live APIs. Cover the happy path, validation errors, back-button and refresh behaviour, save and resume, and upstream API failure (mock with `page.route`).
 - **Resolvers:** test aggregation logic with a mocked datasource.
 - Write or update tests in the same change as the code. Do not mark a task done with failing or skipped tests.
 

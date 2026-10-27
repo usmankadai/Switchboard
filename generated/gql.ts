@@ -15,9 +15,15 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  */
 type Documents = {
     "\n  query RegionLookup($postcode: String!) {\n    region(postcode: $postcode) {\n      code\n      name\n    }\n  }\n": typeof types.RegionLookupDocument,
+    "\n  fragment AgileExplainer_quote on TariffQuote {\n    displayName\n    recentPrices {\n      averagePence\n      minPence\n      maxPence\n      days\n    }\n  }\n": typeof types.AgileExplainer_QuoteFragmentDoc,
+    "\n  fragment TariffCard_quote on TariffQuote {\n    id\n    kind\n    displayName\n    termMonths\n    exitFeePence\n    unitRatePence\n    standingChargePencePerDay\n    estimatedAnnualCostPence\n    priceVaries\n    recentPrices {\n      days\n    }\n  }\n": typeof types.TariffCard_QuoteFragmentDoc,
+    "\n  query TariffComparison($regionCode: ID!, $annualKwh: Int!) {\n    tariffComparison(regionCode: $regionCode, annualKwh: $annualKwh) {\n      pricesCheckedAt\n      quotes {\n        id\n        kind\n        displayName\n        estimatedAnnualCostPence\n        ...TariffCard_quote\n        ...AgileExplainer_quote\n      }\n    }\n  }\n": typeof types.TariffComparisonDocument,
 };
 const documents: Documents = {
     "\n  query RegionLookup($postcode: String!) {\n    region(postcode: $postcode) {\n      code\n      name\n    }\n  }\n": types.RegionLookupDocument,
+    "\n  fragment AgileExplainer_quote on TariffQuote {\n    displayName\n    recentPrices {\n      averagePence\n      minPence\n      maxPence\n      days\n    }\n  }\n": types.AgileExplainer_QuoteFragmentDoc,
+    "\n  fragment TariffCard_quote on TariffQuote {\n    id\n    kind\n    displayName\n    termMonths\n    exitFeePence\n    unitRatePence\n    standingChargePencePerDay\n    estimatedAnnualCostPence\n    priceVaries\n    recentPrices {\n      days\n    }\n  }\n": types.TariffCard_QuoteFragmentDoc,
+    "\n  query TariffComparison($regionCode: ID!, $annualKwh: Int!) {\n    tariffComparison(regionCode: $regionCode, annualKwh: $annualKwh) {\n      pricesCheckedAt\n      quotes {\n        id\n        kind\n        displayName\n        estimatedAnnualCostPence\n        ...TariffCard_quote\n        ...AgileExplainer_quote\n      }\n    }\n  }\n": types.TariffComparisonDocument,
 };
 
 /**
@@ -38,6 +44,18 @@ export function graphql(source: string): unknown;
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query RegionLookup($postcode: String!) {\n    region(postcode: $postcode) {\n      code\n      name\n    }\n  }\n"): (typeof documents)["\n  query RegionLookup($postcode: String!) {\n    region(postcode: $postcode) {\n      code\n      name\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment AgileExplainer_quote on TariffQuote {\n    displayName\n    recentPrices {\n      averagePence\n      minPence\n      maxPence\n      days\n    }\n  }\n"): (typeof documents)["\n  fragment AgileExplainer_quote on TariffQuote {\n    displayName\n    recentPrices {\n      averagePence\n      minPence\n      maxPence\n      days\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment TariffCard_quote on TariffQuote {\n    id\n    kind\n    displayName\n    termMonths\n    exitFeePence\n    unitRatePence\n    standingChargePencePerDay\n    estimatedAnnualCostPence\n    priceVaries\n    recentPrices {\n      days\n    }\n  }\n"): (typeof documents)["\n  fragment TariffCard_quote on TariffQuote {\n    id\n    kind\n    displayName\n    termMonths\n    exitFeePence\n    unitRatePence\n    standingChargePencePerDay\n    estimatedAnnualCostPence\n    priceVaries\n    recentPrices {\n      days\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TariffComparison($regionCode: ID!, $annualKwh: Int!) {\n    tariffComparison(regionCode: $regionCode, annualKwh: $annualKwh) {\n      pricesCheckedAt\n      quotes {\n        id\n        kind\n        displayName\n        estimatedAnnualCostPence\n        ...TariffCard_quote\n        ...AgileExplainer_quote\n      }\n    }\n  }\n"): (typeof documents)["\n  query TariffComparison($regionCode: ID!, $annualKwh: Int!) {\n    tariffComparison(regionCode: $regionCode, annualKwh: $annualKwh) {\n      pricesCheckedAt\n      quotes {\n        id\n        kind\n        displayName\n        estimatedAnnualCostPence\n        ...TariffCard_quote\n        ...AgileExplainer_quote\n      }\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

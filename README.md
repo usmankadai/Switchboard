@@ -70,6 +70,7 @@ pnpm dev
 - [x] App shell with skip link, independence notice and axe checks
 - [x] Postcode step: region lookup, GOV.UK style errors, save and resume
 - [x] Usage step: figure from a bill or a three-question estimate, refilled on return
-- [ ] Tariff comparison step
+- [x] Tariff comparison: live prices, cheapest label, Agile explainer, retry on outage
+- [ ] Agile price chart with a data table alternative
 - [ ] Signup with save and resume, and confirmation
 - [ ] Monitoring, performance budgets and load test write-up
