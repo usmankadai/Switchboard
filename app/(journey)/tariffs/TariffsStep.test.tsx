@@ -147,6 +147,9 @@ describe("TariffsStep", () => {
     const agile = await screen.findByRole("listitem", { name: "Agile Octopus" });
     expect(within(agile).getByText("28.19p per kWh on average")).toBeInTheDocument();
     expect(within(agile).getByText(/based on the last 30 days of prices/i)).toBeInTheDocument();
+    expect(
+      within(agile).getByText("Needs a smart meter that sends half-hourly readings."),
+    ).toBeInTheDocument();
 
     const explainer = screen.getByRole("region", { name: "Is Agile Octopus right for you?" });
     expect(explainer).toHaveTextContent("-7.34p per kWh");

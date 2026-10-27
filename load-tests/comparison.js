@@ -21,9 +21,9 @@ import { Trend } from "k6/metrics";
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const PEAK_RATE = Number(__ENV.PEAK_RATE || 200);
 
-/** All 14 regions × 3 typical usages: 42 distinct comparisons. */
+/** All 14 regions × Ofgem's 3 typical usages (2026): 42 distinct comparisons. */
 const REGIONS = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P"];
-const USAGES = [1800, 2700, 4100];
+const USAGES = [1600, 2500, 3800];
 const COMPARISONS = REGIONS.flatMap((regionCode) =>
   USAGES.map((annualKwh) => ({ regionCode, annualKwh })),
 );

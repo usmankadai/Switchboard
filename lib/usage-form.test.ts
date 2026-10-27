@@ -70,7 +70,7 @@ describe("validateUsageForm", () => {
         ),
       ).toEqual({
         ok: true,
-        annualKwh: 4700,
+        annualKwh: 4500,
         usage: {
           method: "estimate",
           homeSize: "medium-house",
@@ -112,7 +112,7 @@ describe("previewEstimate", () => {
   it("waits until home type and people are both answered", () => {
     expect(previewEstimate(form({ homeSize: "flat" }))).toBeNull();
     expect(previewEstimate(form({ occupants: "2" }))).toBeNull();
-    expect(previewEstimate(form({ homeSize: "flat", occupants: "2" }))).toBe(1800);
+    expect(previewEstimate(form({ homeSize: "flat", occupants: "2" }))).toBe(1600);
   });
 });
 

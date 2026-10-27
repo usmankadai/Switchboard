@@ -109,7 +109,7 @@ export function UsageForm({
             id={USAGE_FIELDS.annualKwh}
             name="annualKwh"
             label="Yearly electricity use, in kWh"
-            hint="Most homes use between 1,500 and 5,000 kWh a year."
+            hint="It is on your annual statement or a recent bill. Ofgem's typical figures are 1,600 kWh (low), 2,500 kWh (medium) and 3,800 kWh (high) a year."
             error={errorFor(USAGE_FIELDS.annualKwh)}
             value={values.annualKwh}
             onChange={(event) => update("annualKwh", event.target.value)}

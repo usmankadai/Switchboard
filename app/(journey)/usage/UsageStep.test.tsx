@@ -95,12 +95,12 @@ describe("UsageStep", () => {
     await user.type(screen.getByRole("textbox", { name: "How many people live there?" }), "2");
     await user.click(screen.getByRole("checkbox", { name: /electric car/i }));
 
-    expect(screen.getByText("4,700 kWh a year")).toBeInTheDocument();
+    expect(screen.getByText("4,500 kWh a year")).toBeInTheDocument();
 
     await submit();
     await waitFor(() => expect(push).toHaveBeenCalledWith("/tariffs"));
     expect(loadJourney()).toMatchObject({
-      annualKwh: 4700,
+      annualKwh: 4500,
       usage: { method: "estimate", homeSize: "medium-house", occupants: 2, hasElectricVehicle: true },
     });
   });
@@ -131,7 +131,7 @@ describe("UsageStep", () => {
 
   it("fills in previous answers for people who come back", () => {
     saveJourney({
-      annualKwh: 7200,
+      annualKwh: 7600,
       usage: {
         method: "estimate",
         homeSize: "large-house",
@@ -146,7 +146,7 @@ describe("UsageStep", () => {
     expect(screen.getByRole("radio", { name: /large house/i })).toBeChecked();
     expect(screen.getByRole("textbox", { name: "How many people live there?" })).toHaveValue("3");
     expect(screen.getByRole("checkbox", { name: /heat pump/i })).toBeChecked();
-    // Large house 3,400 + one extra person 300 + heat pump 3,500
-    expect(screen.getByText("7,200 kWh a year")).toBeInTheDocument();
+    // Large house 3,800 + one extra person 300 + heat pump 3,500
+    expect(screen.getByText("7,600 kWh a year")).toBeInTheDocument();
   });
 });

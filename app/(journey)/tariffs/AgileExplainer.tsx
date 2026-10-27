@@ -56,6 +56,7 @@ export function AgileExplainer({
 
       <h3>It could suit you if you can</h3>
       <ul>
+        <li>get a smart meter that sends half-hourly readings, which Agile needs</li>
         <li>run the washing machine or dishwasher overnight or in the middle of the day</li>
         <li>charge an electric car or home battery when prices are low</li>
         <li>check the next day&apos;s prices, which come out each afternoon</li>

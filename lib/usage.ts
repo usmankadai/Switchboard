@@ -9,23 +9,35 @@ export type UsageAnswers = {
 };
 
 /**
- * Starting points in kWh a year. Anchored to Ofgem's typical domestic
- * consumption values for electricity (low 1,800, medium 2,700, high 4,100).
+ * Ofgem's typical domestic consumption values (TDCVs) for single-rate
+ * electricity (Profile Class 1), in force from 1 July 2026. Source: Ofgem,
+ * "Review of typical domestic consumption values: decision", 27 May 2026,
+ * table 1. Check for a newer review before relying on these.
+ */
+export const OFGEM_TDCV_KWH = { low: 1600, medium: 2500, high: 3800 } as const;
+
+/**
+ * Starting points in kWh a year. Flat, medium and large house use Ofgem's
+ * low, medium and high figures. Ofgem has no figure for a small house, so it
+ * sits between low and medium: that one is our assumption.
  */
 const BASE_KWH: Record<HomeSize, number> = {
-  flat: 1800,
-  "small-house": 2300,
-  "medium-house": 2700,
-  "large-house": 3400,
+  flat: OFGEM_TDCV_KWH.low,
+  "small-house": 2000,
+  "medium-house": OFGEM_TDCV_KWH.medium,
+  "large-house": OFGEM_TDCV_KWH.high,
 };
 
-/** Each person above or below two shifts usage by roughly this much. */
+// The adjustments below are our own rough assumptions, not official figures.
+// They make the estimate respond sensibly; a bill or smart meter is always better.
+
+/** Each person above or below two shifts usage by roughly this much (assumption). */
 const KWH_PER_EXTRA_OCCUPANT = 300;
 
-/** About 7,000 miles a year at roughly 3.5 miles per kWh. */
+/** About 7,000 miles a year at roughly 3.5 miles per kWh (assumption). */
 const ELECTRIC_VEHICLE_KWH = 2000;
 
-/** A heat pump for an average home, replacing gas heating. */
+/** A heat pump heating an average home in place of gas (assumption). */
 const HEAT_PUMP_KWH = 3500;
 
 /** Sensible upper bound for one home. Above this is almost certainly a typo. */

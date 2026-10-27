@@ -43,6 +43,11 @@
   font-size: 1rem;
 }
 
+.requirement {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
 .cost {
   display: flex;
   flex-direction: column;

@@ -63,7 +63,7 @@ test.describe("usage step", () => {
     await page.keyboard.press("Enter");
 
     await expect(page).toHaveURL(/\/tariffs$/);
-    await expect(page.getByText("1,500 kWh (estimated)")).toBeVisible();
+    await expect(page.getByText("1,300 kWh (estimated)")).toBeVisible();
   });
 
   test("refills previous answers when changing them from the tariffs step", async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe("usage step", () => {
     await page.getByRole("radio", { name: /small house/i }).check();
     await page.getByRole("textbox", { name: "How many people live there?" }).fill("3");
     await page.getByRole("checkbox", { name: /heat pump/i }).check();
-    await expect(page.getByText("6,100 kWh a year")).toBeVisible();
+    await expect(page.getByText("5,800 kWh a year")).toBeVisible();
     await continueButton(page).click();
 
     await page.getByRole("link", { name: "Change yearly usage" }).click();

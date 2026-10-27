@@ -63,7 +63,7 @@ describe("regions", () => {
 });
 
 describe("estimateAnnualKwh", () => {
-  it("uses Ofgem's medium figure for a typical medium house of two", () => {
+  it("uses Ofgem's 2026 medium figure for a typical medium house of two", () => {
     expect(
       estimateAnnualKwh({
         homeSize: "medium-house",
@@ -71,7 +71,7 @@ describe("estimateAnnualKwh", () => {
         hasElectricVehicle: false,
         hasHeatPump: false,
       }),
-    ).toBe(2700);
+    ).toBe(2500);
   });
 
   it("adds an EV and a heat pump", () => {
@@ -82,7 +82,7 @@ describe("estimateAnnualKwh", () => {
         hasElectricVehicle: true,
         hasHeatPump: true,
       }),
-    ).toBe(2700 + 600 + 2000 + 3500);
+    ).toBe(2500 + 600 + 2000 + 3500);
   });
 
   it("rejects impossible household sizes", () => {

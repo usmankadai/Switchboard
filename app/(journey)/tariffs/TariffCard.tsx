@@ -32,9 +32,18 @@ export const TariffCardFragment = graphql(`
 const KIND_DESCRIPTIONS = {
   FLEXIBLE: "A variable price that can go up or down, usually every 3 months.",
   FIXED: "Your unit rate and standing charge stay the same for the whole contract.",
-  TRACKER: "The price changes each day, following wholesale costs, up to a cap.",
+  TRACKER: "The price changes each day, following wholesale energy costs.",
   AGILE: "The price changes every half hour. It is cheapest when demand is low, sometimes below zero.",
 } as const;
+
+/**
+ * What a customer needs before they can choose a tariff. Agile bills every
+ * half hour, so it needs a smart meter that sends half-hourly readings
+ * (Octopus's Agile help page and terms).
+ */
+const REQUIREMENTS: Partial<Record<keyof typeof KIND_DESCRIPTIONS, string>> = {
+  AGILE: "Needs a smart meter that sends half-hourly readings.",
+};
 
 type TariffCardProps = {
   quote: FragmentType<typeof TariffCardFragment>;
@@ -57,6 +66,9 @@ export function TariffCard({ quote: quoteRef, isCheapest, onChoose }: TariffCard
         {quote.displayName}
       </h2>
       <p className={styles.kind}>{KIND_DESCRIPTIONS[quote.kind]}</p>
+      {REQUIREMENTS[quote.kind] ? (
+        <p className={styles.requirement}>{REQUIREMENTS[quote.kind]}</p>
+      ) : null}
 
       <p className={styles.cost}>
         <span className={styles.costLabel}>Estimated cost</span>

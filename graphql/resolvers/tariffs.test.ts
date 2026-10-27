@@ -262,6 +262,15 @@ describe("region", () => {
     });
   });
 
+  it("explains a real postcode outside Great Britain", async () => {
+    vi.mocked(energy.lookupRegion).mockResolvedValue(null);
+    const result = await run({ postcode: "BT1 1AA" }, REGION);
+    expect(result.errors?.[0]).toMatchObject({
+      message: "Switchboard only covers Great Britain. Northern Ireland has a separate electricity market",
+      extensions: { code: "POSTCODE_NOT_FOUND", field: "postcode" },
+    });
+  });
+
   it("turns an upstream failure into a friendly, retryable error", async () => {
     vi.mocked(energy.lookupRegion).mockRejectedValue(
       new UpstreamError("Octopus returned 503", "octopus"),

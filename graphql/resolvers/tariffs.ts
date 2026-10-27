@@ -63,9 +63,18 @@ async function resolveRegion(
       dataSources.energy.postcodeExists(postcode),
       dataSources.energy.lookupRegion(postcode),
     ]);
-    if (!exists || !regionCode) {
+    if (!exists) {
       throw userError(
         "We could not find that postcode. Check it and try again",
+        ErrorCode.PostcodeNotFound,
+        "postcode",
+      );
+    }
+    if (!regionCode) {
+      // A real postcode with no Great Britain electricity region: Northern
+      // Ireland has a separate electricity market.
+      throw userError(
+        "Switchboard only covers Great Britain. Northern Ireland has a separate electricity market",
         ErrorCode.PostcodeNotFound,
         "postcode",
       );

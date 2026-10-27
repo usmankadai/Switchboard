@@ -122,7 +122,7 @@ export function TariffsStep() {
             <div className={styles.wide}>
               <p>
                 Estimated yearly costs for {formatKwh(annualKwh)} a year in {regionName},
-                including VAT. They are estimates, not quotes.
+                including VAT. They are estimates, not quotes, and assume today&apos;s prices for a whole year, so they will change if prices or VAT change.
               </p>
               {comparison.unavailableKinds.length > 0 ? (
                 <div className={formStyles.panel}>
