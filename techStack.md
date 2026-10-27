@@ -42,7 +42,7 @@ Everything Switchboard uses, what it is for, and where it lives. Versions are th
 
 | Service | Needed? | What it is for | Key? |
 | --- | --- | --- | --- |
-| [Octopus Energy public API](https://developer.octopus.energy/docs/api/) | Yes | Regions, products, unit rates, standing charges, Agile half-hourly prices | No key |
+| [Octopus Energy public API](https://developer.octopus.energy/rest/guides/api-basics) | Yes | Regions, products, unit rates, standing charges, Agile half-hourly prices | No key |
 | [postcodes.io](https://postcodes.io) | Yes | Checks a postcode is real | No key |
 | Vercel | For deployment | Hosting, CDN, shared remote cache for `'use cache: remote'` | Account |
 | Vercel Speed Insights (`@vercel/speed-insights` 2.0.0) | Optional | Real-user Core Web Vitals (LCP, CLS, INP). Only loads on Vercel | Enabled in Vercel |
