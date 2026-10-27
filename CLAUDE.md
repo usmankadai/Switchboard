@@ -22,7 +22,7 @@ It is a portfolio project built to demonstrate the skills of a Frontend Engineer
 - **Electricity only, single-rate meters.** Gas, dual fuel and Economy 7 are out of scope. Agile is electricity only anyway, so this keeps the most interesting tariffs. The README notes that gas would follow the same datasource and resolver pattern.
 - **Consumer prices are inc-VAT.** The API returns both `value_exc_vat` and `value_inc_vat`; always use the inc-VAT fields.
 - **Direct Debit prices.** Where rates are split by `payment_method`, use `DIRECT_DEBIT` (or `null`, meaning it applies to all methods).
-- **Address lookup is fake.** Full UK address data (Royal Mail PAF) is licensed. Use a clearly labelled fake lookup with sample addresses. Postcodes are validated for real with postcodes.io (free, no key).
+- **Addresses are entered by hand.** Full UK address data (Royal Mail PAF, or Ordnance Survey AddressBase) is licensed, so the supply address uses the GOV.UK address pattern: address line 1, address line 2 (optional), town or city and postcode, with GOV.UK's error messages and `autocomplete` values. County is left out. Only the postcode is sent to the server, which checks it is real (postcodes.io) and in the same region as the prices; address lines never leave the browser. A paid lookup could be added later alongside manual entry, never instead of it.
 
 ## Tech stack
 

@@ -18,7 +18,7 @@ Switchboard is an **independent concept**: a four-step electricity quote journey
 | Yearly cost for Agile | **Estimate** | The last 30 days of prices, weighted by a typical household's daily pattern of use. Your real cost depends on when you use electricity |
 | The daily usage pattern used for that weighting | **Approximation** | Hand-shaped to follow the published Elexon domestic profile (low overnight, evening peak), not the official data |
 | Usage estimate (home type, people, EV, heat pump) | **Estimate** | Flat, medium and large house use Ofgem's July 2026 typical figures (1,600, 2,500 and 3,800 kWh). The small-house figure (2,000 kWh) and the adjustments for people (300 kWh each), an EV (2,000 kWh) and a heat pump (3,500 kWh) are our assumptions |
-| Addresses | **Demo** | Made-up "Sample Road" addresses. Real UK address data (Royal Mail PAF) needs a paid licence |
+| Supply address | **Real, typed by you** | Entered by hand, following the GOV.UK address pattern. There is no address lookup, because UK address data (Royal Mail PAF, Ordnance Survey AddressBase) needs a paid licence. The postcode is checked for real |
 | Signup | **Demo** | Your name and email are checked, then thrown away. No account is created, no email is sent, and your supply does not change |
 | Reference number | **Demo** | A random code such as SB-3F9A1C2E |
 | "Switch within 5 working days" | **Real rule** | Suppliers must complete a switch within 5 working days (Ofgem), which the confirmation page describes |
@@ -70,7 +70,7 @@ Switchboard is an **independent concept**: a four-step electricity quote journey
 
 - Shows the tariff you chose and its estimated cost.
 - Full name and email address, with browser autofill.
-- **Supply address:** enter a postcode and press **Find address**. The postcode is checked for real, and **if it is in a different region from your prices, you are stopped**, because tariffs are priced by region. Then pick one of the made-up addresses.
+- **Supply address:** typed in by hand, following the GOV.UK address pattern: address line 1, address line 2 (optional), town or city, and postcode, with browser autofill. When you submit, the server checks the postcode is real and **stops you if it is in a different region from your prices**, because tariffs are priced by region. Only the postcode is sent; the address lines never leave your browser.
 - A tick box confirming you understand it is a demo.
 - No payment fields. The page says a real switch would ask for them here.
 - **Confirm and switch** sends your details to the server, which checks them again with the same rules and returns a made-up reference.

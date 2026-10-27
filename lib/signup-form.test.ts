@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { demoAddressesFor } from "./demo-addresses";
-import { POSTCODE_MESSAGES } from "./postcode";
 import {
   checkSignupDetails,
   EMPTY_SIGNUP_FORM,
@@ -10,73 +8,86 @@ import {
   type SignupFormValues,
 } from "./signup-form";
 
-const addresses = demoAddressesFor("SW1A 1AA");
-
 const complete: SignupFormValues = {
   fullName: "Sam Taylor",
   email: "sam@example.com",
-  addressPostcode: "SW1A 1AA",
-  addressOptions: addresses,
-  address: addresses[2]!,
+  addressLine1: "10 Downing Street",
+  addressLine2: "",
+  addressTown: "London",
+  addressPostcode: "SW1A 2AA",
   confirmed: true,
 };
 
-describe("checkSignupDetails", () => {
-  it("accepts a name and email, ignoring surrounding spaces", () => {
-    expect(checkSignupDetails({ fullName: "  Sam  ", email: " sam@example.com " })).toEqual([]);
+const details = { fullName: "Sam", email: "sam@example.com", supplyPostcode: "SW1A 2AA" };
+
+describe("checkSignupDetails (shared with the server)", () => {
+  it("accepts a name, email and postcode, ignoring surrounding spaces", () => {
+    expect(
+      checkSignupDetails({ fullName: "  Sam  ", email: " sam@example.com ", supplyPostcode: " sw1a2aa " }),
+    ).toEqual([]);
   });
 
   it.each(["sam", "sam@example", "sam @example.com", "@example.com"])(
     "rejects the email %j",
     (email) => {
-      expect(checkSignupDetails({ fullName: "Sam", email })).toEqual([
+      expect(checkSignupDetails({ ...details, email })).toEqual([
         { fieldId: SIGNUP_FIELDS.email, message: SIGNUP_MESSAGES.emailInvalid },
       ]);
     },
   );
 
   it("rejects a name that is too long", () => {
-    expect(checkSignupDetails({ fullName: "a".repeat(101), email: "sam@example.com" })).toEqual([
+    expect(checkSignupDetails({ ...details, fullName: "a".repeat(101) })).toEqual([
       { fieldId: SIGNUP_FIELDS.fullName, message: SIGNUP_MESSAGES.nameTooLong },
+    ]);
+  });
+
+  it.each([
+    ["", SIGNUP_MESSAGES.postcodeEmpty],
+    ["SW1", SIGNUP_MESSAGES.postcodeInvalid],
+  ])("uses the GOV.UK message for the postcode %j", (supplyPostcode, message) => {
+    expect(checkSignupDetails({ ...details, supplyPostcode })).toEqual([
+      { fieldId: SIGNUP_FIELDS.addressPostcode, message },
     ]);
   });
 });
 
 describe("validateSignupForm", () => {
-  it("accepts a complete form", () => {
+  it("accepts a complete form, with or without address line 2", () => {
     expect(validateSignupForm(complete)).toEqual([]);
+    expect(validateSignupForm({ ...complete, addressLine2: "Westminster" })).toEqual([]);
   });
 
-  it("lists every problem in page order", () => {
-    expect(validateSignupForm(EMPTY_SIGNUP_FORM).map((error) => error.message)).toEqual([
-      SIGNUP_MESSAGES.nameEmpty,
-      SIGNUP_MESSAGES.emailEmpty,
-      POSTCODE_MESSAGES.empty,
-      SIGNUP_MESSAGES.confirm,
+  it("lists every problem in page order, with GOV.UK's address messages", () => {
+    expect(validateSignupForm(EMPTY_SIGNUP_FORM)).toEqual([
+      { fieldId: SIGNUP_FIELDS.fullName, message: SIGNUP_MESSAGES.nameEmpty },
+      { fieldId: SIGNUP_FIELDS.email, message: SIGNUP_MESSAGES.emailEmpty },
+      { fieldId: SIGNUP_FIELDS.addressLine1, message: "Enter address line 1, typically the building and street" },
+      { fieldId: SIGNUP_FIELDS.addressTown, message: "Enter town or city" },
+      { fieldId: SIGNUP_FIELDS.addressPostcode, message: "Enter postcode" },
+      { fieldId: SIGNUP_FIELDS.confirm, message: SIGNUP_MESSAGES.confirm },
     ]);
   });
 
-  it("asks people to use the finder when the postcode looks right", () => {
-    const errors = validateSignupForm({ ...complete, addressOptions: null, address: "" });
-    expect(errors).toEqual([
-      { fieldId: SIGNUP_FIELDS.addressPostcode, message: SIGNUP_MESSAGES.addressNotFound },
+  it("treats spaces as empty", () => {
+    const errors = validateSignupForm({ ...complete, addressLine1: "   ", addressTown: " " });
+    expect(errors.map((error) => error.fieldId)).toEqual([
+      SIGNUP_FIELDS.addressLine1,
+      SIGNUP_FIELDS.addressTown,
     ]);
   });
 
-  it("asks people to pick an address once some are found", () => {
-    expect(validateSignupForm({ ...complete, address: "" })).toEqual([
-      { fieldId: SIGNUP_FIELDS.address, message: SIGNUP_MESSAGES.addressNotSelected },
+  it("rejects address lines that are too long", () => {
+    const long = "a".repeat(101);
+    const errors = validateSignupForm({ ...complete, addressLine1: long, addressLine2: long, addressTown: long });
+    expect(errors.map((error) => error.message)).toEqual([
+      SIGNUP_MESSAGES.line1TooLong,
+      SIGNUP_MESSAGES.line2TooLong,
+      SIGNUP_MESSAGES.townTooLong,
     ]);
   });
 
-  it("rejects an address that is not in the list", () => {
-    expect(validateSignupForm({ ...complete, address: "Somewhere else" })).toHaveLength(1);
-  });
-});
-
-describe("demoAddressesFor", () => {
-  it("returns clearly made-up addresses for the postcode", () => {
-    expect(addresses).toHaveLength(5);
-    expect(addresses.every((address) => address.includes("Sample Road, SW1A 1AA"))).toBe(true);
+  it("accepts postcodes in different formats", () => {
+    expect(validateSignupForm({ ...complete, addressPostcode: "sw1a2aa" })).toEqual([]);
   });
 });

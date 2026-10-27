@@ -1,15 +1,14 @@
 import type { Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, test } from "./fixtures";
-import { comparisonReply, mockGraphQL, regionReply, startSwitchReply } from "./graphqlMock";
+import { comparisonReply, errorReply, mockGraphQL, startSwitchReply } from "./graphqlMock";
 
 const STORAGE_KEY = "switchboard:journey:v1";
 const TARIFF_ID = "E-1R-OE-FIX-12M-26-10-27-C";
 
-async function startOnSignup(page: Page) {
+async function startOnSignup(page: Page, startSwitch: Record<string, unknown> = startSwitchReply(TARIFF_ID)) {
   await mockGraphQL(page, {
     TariffComparison: comparisonReply,
-    RegionLookup: regionReply("C", "London"),
-    StartSwitch: startSwitchReply(TARIFF_ID),
+    StartSwitch: startSwitch,
   });
   await page.goto("/");
   await page.evaluate(
@@ -27,6 +26,15 @@ async function startOnSignup(page: Page) {
   await page.goto("/signup");
 }
 
+async function fillForm(page: Page) {
+  await page.getByRole("textbox", { name: "Full name" }).fill("Sam Taylor");
+  await page.getByRole("textbox", { name: "Email address" }).fill("sam@example.com");
+  await page.getByRole("textbox", { name: "Address line 1" }).fill("10 Downing Street");
+  await page.getByRole("textbox", { name: "Town or city" }).fill("London");
+  await page.getByRole("textbox", { name: "Postcode" }).fill("SW1A 2AA");
+  await page.getByRole("checkbox", { name: /I understand this is a demo/ }).check();
+}
+
 const storedJourney = (page: Page) =>
   page.evaluate((key) => localStorage.getItem(key) ?? "", STORAGE_KEY);
 
@@ -34,6 +42,7 @@ test.describe("signup step", () => {
   test("has no accessibility violations, with and without errors", async ({ page }) => {
     await startOnSignup(page);
     await expect(page.getByText("You chose Octopus 12M Fixed")).toBeVisible();
+    await expect(page.getByRole("group", { name: "Supply address" })).toBeVisible();
     await expectNoAxeViolations(page);
 
     await page.getByRole("button", { name: "Confirm and switch" }).click();
@@ -41,23 +50,27 @@ test.describe("signup step", () => {
     await expect(
       page.getByRole("heading", { name: "There is a problem" }).locator(".."),
     ).toBeFocused();
+    await expect(
+      page.getByRole("link", { name: "Enter address line 1, typically the building and street" }),
+    ).toBeVisible();
     await expectNoAxeViolations(page);
   });
 
   test("signs up, confirms, survives a reload and starts again", async ({ page }) => {
     await startOnSignup(page);
 
-    await page.getByRole("textbox", { name: "Full name" }).fill("Sam Taylor");
-    await page.getByRole("textbox", { name: "Email address" }).fill("sam@example.com");
-    await page.getByRole("textbox", { name: "Postcode" }).fill("SW1A 1AA");
-    await page.getByRole("button", { name: "Find address" }).click();
-
-    const select = page.getByRole("combobox", { name: "Select your address" });
-    await select.selectOption("12 Sample Road, SW1A 1AA");
-    await expectNoAxeViolations(page);
-
-    await page.getByRole("checkbox", { name: /I understand this is a demo/ }).check();
+    // Only name, email and postcode are sent. Address lines stay in the browser.
+    const sent = page.waitForRequest(
+      (request) =>
+        request.url().endsWith("/api/graphql") &&
+        request.method() === "POST" &&
+        request.postDataJSON()?.operationName === "StartSwitch",
+    );
+    await fillForm(page);
     await page.getByRole("button", { name: "Confirm and switch" }).click();
+    const input = (await sent).postDataJSON().variables.input;
+    expect(Object.keys(input).sort()).toEqual(["email", "fullName", "regionCode", "supplyPostcode", "tariffId"]);
+    expect(JSON.stringify(input)).not.toMatch(/Downing|London/);
 
     await expect(page).toHaveURL(/\/confirmation$/);
     await expect(page).toHaveTitle("Switch request received | Switchboard");
@@ -70,7 +83,7 @@ test.describe("signup step", () => {
     // Nothing personal was saved.
     const stored = await storedJourney(page);
     expect(stored).toContain("SB-3F9A1C2E");
-    expect(stored).not.toMatch(/Sam|example\.com|Sample Road|SW1A/);
+    expect(stored).not.toMatch(/Sam|example\.com|Downing|London|SW1A/);
 
     await page.reload();
     await expect(page.getByText("SB-3F9A1C2E")).toBeVisible();
@@ -82,36 +95,39 @@ test.describe("signup step", () => {
 
   test("clears personal details from the page after signing up", async ({ page }) => {
     await startOnSignup(page);
-    await page.getByRole("textbox", { name: "Full name" }).fill("Sam Taylor");
-    await page.getByRole("textbox", { name: "Email address" }).fill("sam@example.com");
-    await page.getByRole("textbox", { name: "Postcode" }).fill("SW1A 1AA");
-    await page.getByRole("button", { name: "Find address" }).click();
-    await page.getByRole("combobox", { name: "Select your address" }).selectOption({ index: 1 });
-    await page.getByRole("checkbox", { name: /I understand this is a demo/ }).check();
+    await fillForm(page);
     await page.getByRole("button", { name: "Confirm and switch" }).click();
     await expect(page).toHaveURL(/\/confirmation$/);
 
     // Next.js keeps the signup page in the DOM, hidden. Its fields must be empty.
     const hiddenValues = await page
-      .locator("input#full-name, input#email")
+      .locator("input#full-name, input#email, input#address-line-1, input#address-town, input#address-postcode")
       .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
+    expect(hiddenValues).toHaveLength(5);
     expect(hiddenValues.every((value) => value === "")).toBe(true);
   });
 
   test("stops a supply address outside the priced region", async ({ page }) => {
-    await startOnSignup(page);
-    await page.unrouteAll();
-    await mockGraphQL(page, {
-      TariffComparison: comparisonReply,
-      RegionLookup: regionReply("P", "North Scotland"),
+    const message =
+      "This postcode is in North Scotland, but your prices are for London. Go back to the start to get prices for this address.";
+    await startOnSignup(page, {
+      ...errorReply(message, "BAD_USER_INPUT", "address-postcode"),
+      errors: [
+        {
+          message,
+          extensions: {
+            code: "BAD_USER_INPUT",
+            field: "address-postcode",
+            fieldErrors: [{ field: "address-postcode", message }],
+          },
+        },
+      ],
     });
+    await fillForm(page);
+    await page.getByRole("button", { name: "Confirm and switch" }).click();
 
-    await page.getByRole("textbox", { name: "Postcode" }).fill("SW1A 1AA");
-    await page.getByRole("button", { name: "Find address" }).click();
-
-    await expect(
-      page.getByRole("link", { name: /This postcode is in North Scotland/ }),
-    ).toBeVisible();
-    await expect(page.getByRole("combobox")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: message })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Postcode" })).toHaveAttribute("aria-invalid", "true");
+    await expect(page).toHaveURL(/\/signup$/);
   });
 });

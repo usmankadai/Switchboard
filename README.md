@@ -132,7 +132,7 @@ Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine
 - [x] Usage step: figure from a bill or a three-question estimate, refilled on return
 - [x] Tariff comparison: live prices, cheapest label, Agile explainer, retry on outage
 - [x] Agile price chart by time of day, with a text summary and a data table
-- [x] Signup: demo address finder with region check, startSwitch mutation, confirmation
+- [x] Signup: GOV.UK-style manual address entry, server check that the postcode is real and in the priced region, startSwitch mutation, confirmation
 - [x] Caching and resilience: shared server cache, CDN caching, timeouts and retries, partial results
 - [x] Performance budgets (Lighthouse CI) and monitoring (Sentry, Speed Insights, anonymous funnel events)
 - [x] Load test (k6) and write-up

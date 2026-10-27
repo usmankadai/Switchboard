@@ -82,6 +82,12 @@ export type StartSwitchInput = {
   fullName: Scalars['String']['input'];
   /** Region letter from the postcode step. */
   regionCode: Scalars['ID']['input'];
+  /**
+   * Postcode of the supply address. Checked to be real and in the same region
+   * as the prices, then thrown away. Address lines are not sent: the server
+   * has no use for them.
+   */
+  supplyPostcode: Scalars['String']['input'];
   /** The chosen tariff's id from tariffComparison. */
   tariffId: Scalars['ID']['input'];
 };

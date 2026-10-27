@@ -168,6 +168,7 @@ The GOV.UK Design System (the form patterns in this project come from here):
 - [GOV.UK Design System](https://design-system.service.gov.uk/)
 - [Error summary](https://design-system.service.gov.uk/components/error-summary/) and [error message](https://design-system.service.gov.uk/components/error-message/)
 - [Radios](https://design-system.service.gov.uk/components/radios/) and [question pages](https://design-system.service.gov.uk/patterns/question-pages/)
+- [Addresses](https://design-system.service.gov.uk/patterns/addresses/): the pattern the signup step follows for the supply address.
 - [Form structure](https://www.gov.uk/service-manual/design/form-structure) and the original [one thing per page](https://designnotes.blog.gov.uk/2015/07/03/one-thing-per-page/) post.
 
 Test with a real screen reader:

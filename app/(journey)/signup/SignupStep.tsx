@@ -8,7 +8,6 @@ import { StepHeading } from "@/components/StepHeading";
 import { useFunnelStep } from "@/components/useFunnelStep";
 import { useSavedJourney } from "@/components/useSavedJourney";
 import { describeCost } from "@/lib/comparison";
-import { REGION_NAMES } from "@/lib/regions";
 import { stepCaption } from "../steps";
 import { useTariffComparison } from "../tariffs/useTariffComparison";
 import { SignupForm } from "./SignupForm";
@@ -57,7 +56,6 @@ export function SignupStep() {
           ) : null}
           <SignupForm
             regionCode={regionCode}
-            regionName={REGION_NAMES[regionCode] ?? regionCode}
             tariffId={tariffId}
             errors={errors}
             onInvalid={(next) => {

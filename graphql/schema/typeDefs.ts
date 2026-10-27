@@ -45,6 +45,12 @@ export const typeDefs = /* GraphQL */ `
     regionCode: ID!
     "The chosen tariff's id from tariffComparison."
     tariffId: ID!
+    """
+    Postcode of the supply address. Checked to be real and in the same region
+    as the prices, then thrown away. Address lines are not sent: the server
+    has no use for them.
+    """
+    supplyPostcode: String!
   }
 
   type StartSwitchResult {

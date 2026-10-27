@@ -76,4 +76,4 @@ Everything Switchboard uses, what it is for, and where it lives. Versions are th
 - **No chart library.** The Agile chart is hand-written SVG to stay inside the 250 KB JavaScript budget.
 - **No CSS framework or component library.** The form kit is small and accessible by design.
 - **No database.** Nothing personal is stored. The only stored data are anonymous funnel counts.
-- **No email service, address service or payment provider.** See "What is not real" in `functionality.md`.
+- **No email service, address lookup service or payment provider.** Addresses are typed in by hand (GOV.UK address pattern), because UK address data needs a paid licence. See the "What is real, what is estimated, and what is a demo" table in `functionality.md`.

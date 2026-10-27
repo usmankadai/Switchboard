@@ -1,29 +1,24 @@
 "use client";
 
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
-import { useApolloClient, useMutation } from "@apollo/client/react";
+import { useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { useLayoutEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { Checkboxes } from "@/components/Checkboxes";
 import type { FormError } from "@/components/ErrorSummary";
 import formStyles from "@/components/form.module.css";
-import { Select } from "@/components/Select";
 import { markStepNavigation } from "@/components/stepNavigation";
 import { TextInput } from "@/components/TextInput";
 import { graphql } from "@/generated";
-import { demoAddressesFor } from "@/lib/demo-addresses";
 import { saveJourney } from "@/lib/journey-storage";
 import { trackFunnel } from "@/lib/monitoring/funnel";
-import { checkPostcodeInput } from "@/lib/postcode";
-import { REGION_NAMES } from "@/lib/regions";
 import {
   EMPTY_SIGNUP_FORM,
   SIGNUP_FIELDS,
   validateSignupForm,
   type SignupFormValues,
 } from "@/lib/signup-form";
-import { RegionLookupQuery } from "../postcode/PostcodeForm";
 
 export const StartSwitchMutation = graphql(`
   mutation StartSwitch($input: StartSwitchInput!) {
@@ -36,12 +31,9 @@ export const StartSwitchMutation = graphql(`
 
 export const SIGNUP_UNAVAILABLE =
   "We could not complete your signup just now. Please try again in a moment.";
-export const ADDRESS_UNAVAILABLE =
-  "We could not look up that postcode just now. Please try again in a moment.";
 
 type SignupFormProps = {
   regionCode: string;
-  regionName: string;
   tariffId: string;
   errors: readonly FormError[];
   /** Show these errors and move focus to the summary. */
@@ -52,112 +44,53 @@ type SignupFormProps = {
 
 /** Map a failed mutation to messages for the form. */
 function toFormErrors(error: unknown): FormError[] {
-  if (CombinedGraphQLErrors.is(error)) {
-    const extensions = error.errors[0]?.extensions;
-    const fieldErrors = extensions?.fieldErrors;
-    if (Array.isArray(fieldErrors)) {
-      return fieldErrors.map((fieldError: { field: string; message: string }) => ({
-        fieldId: fieldError.field,
-        message: fieldError.message,
-      }));
-    }
-    if (extensions?.field === "tariffId") {
-      return [{ message: error.errors[0]?.message ?? SIGNUP_UNAVAILABLE }];
-    }
+  if (!CombinedGraphQLErrors.is(error)) return [{ message: SIGNUP_UNAVAILABLE }];
+  const first = error.errors[0];
+  const extensions = first?.extensions;
+
+  // Several field problems at once (name, email, postcode format).
+  const fieldErrors = extensions?.fieldErrors;
+  if (Array.isArray(fieldErrors)) {
+    return fieldErrors.map((fieldError: { field: string; message: string }) => ({
+      fieldId: fieldError.field,
+      message: fieldError.message,
+    }));
   }
+  // A tariff that no longer fits: not tied to a field on this page.
+  if (extensions?.field === "tariffId") {
+    return [{ message: first?.message ?? SIGNUP_UNAVAILABLE }];
+  }
+  // One field problem, such as a supply postcode that does not exist.
+  const isUserError = ["BAD_USER_INPUT", "POSTCODE_NOT_FOUND"].includes(String(extensions?.code));
+  if (isUserError && typeof extensions?.field === "string" && first) {
+    return [{ fieldId: extensions.field, message: first.message }];
+  }
+  // Outages and network failures: pressing the button again retries.
   return [{ message: SIGNUP_UNAVAILABLE }];
 }
 
 export function SignupForm({
   regionCode,
-  regionName,
   tariffId,
   errors,
   onInvalid,
   onErrorsChange,
 }: SignupFormProps) {
   const router = useRouter();
-  const client = useApolloClient();
   const [startSwitch] = useMutation(StartSwitchMutation);
 
   // Personal details live here only: never in storage, logs or monitoring.
   const [values, setValues] = useState<SignupFormValues>(EMPTY_SIGNUP_FORM);
-  const [finding, setFinding] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Next.js keeps this page alive (hidden) after moving on, so reset busy
-  // flags when it is hidden.
-  useLayoutEffect(
-    () => () => {
-      setFinding(false);
-      setSubmitting(false);
-    },
-    [],
-  );
+  // Next.js keeps this page alive (hidden) after moving on, so reset the busy
+  // flag when it is hidden.
+  useLayoutEffect(() => () => setSubmitting(false), []);
 
   const errorFor = (fieldId: string) => errors.find((error) => error.fieldId === fieldId)?.message;
 
   function update<K extends keyof SignupFormValues>(key: K, value: SignupFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
-  }
-
-  /** Drop the error for one field once it has been dealt with. */
-  function clearError(fieldId: string) {
-    if (errors.some((error) => error.fieldId === fieldId)) {
-      onErrorsChange(errors.filter((error) => error.fieldId !== fieldId));
-    }
-  }
-
-  async function findAddress() {
-    if (finding) return;
-    const check = checkPostcodeInput(values.addressPostcode);
-    if (!check.ok) {
-      onInvalid([{ fieldId: SIGNUP_FIELDS.addressPostcode, message: check.message }]);
-      return;
-    }
-
-    setFinding(true);
-    try {
-      const { data } = await client.query({
-        query: RegionLookupQuery,
-        variables: { postcode: check.postcode },
-      });
-      if (!data) throw new Error("No data returned");
-
-      // Tariffs are priced by region, so the supply address must match.
-      if (data.region.code !== regionCode) {
-        onInvalid([
-          {
-            fieldId: SIGNUP_FIELDS.addressPostcode,
-            message: `This postcode is in ${REGION_NAMES[data.region.code] ?? data.region.name}, but your prices are for ${regionName}. Go back to the start to get prices for this address.`,
-          },
-        ]);
-        return;
-      }
-
-      setValues((current) => ({
-        ...current,
-        addressPostcode: check.postcode,
-        addressOptions: demoAddressesFor(check.postcode),
-        address: "",
-      }));
-      clearError(SIGNUP_FIELDS.addressPostcode);
-    } catch (error) {
-      // A postcode the server could not find gets its own message; anything
-      // else (an outage, no connection) gets a "try again".
-      const first = CombinedGraphQLErrors.is(error) ? error.errors[0] : undefined;
-      const isNotFound = ["BAD_USER_INPUT", "POSTCODE_NOT_FOUND"].includes(
-        String(first?.extensions?.code),
-      );
-      onInvalid([
-        {
-          fieldId: SIGNUP_FIELDS.addressPostcode,
-          message: isNotFound && first ? first.message : ADDRESS_UNAVAILABLE,
-        },
-      ]);
-    } finally {
-      setFinding(false);
-    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -179,6 +112,8 @@ export function SignupForm({
             email: values.email.trim(),
             regionCode,
             tariffId,
+            // Only the postcode of the address is sent, to check its region.
+            supplyPostcode: values.addressPostcode.trim(),
           },
         },
       });
@@ -197,8 +132,6 @@ export function SignupForm({
       setSubmitting(false);
     }
   }
-
-  const addressCount = values.addressOptions?.length ?? 0;
 
   return (
     <form noValidate onSubmit={handleSubmit}>
@@ -225,65 +158,54 @@ export function SignupForm({
         spellCheck={false}
       />
 
-      <h2 className={formStyles.sectionHeading}>Supply address</h2>
-      <p className={formStyles.hint}>
-        This is a demo, so the addresses are made up. Real address data needs a licence.
-      </p>
-      <div className={formStyles.inline}>
+      <fieldset className={formStyles.addressFieldset} aria-describedby="supply-address-hint">
+        <legend className={formStyles.addressLegend}>
+          <h2 className={formStyles.sectionHeading}>Supply address</h2>
+        </legend>
+        <p id="supply-address-hint" className={formStyles.hint}>
+          Where you want your electricity supplied. It must be in the same region as your prices.
+        </p>
+        <TextInput
+          id={SIGNUP_FIELDS.addressLine1}
+          name="addressLine1"
+          label="Address line 1"
+          error={errorFor(SIGNUP_FIELDS.addressLine1)}
+          value={values.addressLine1}
+          onChange={(event) => update("addressLine1", event.target.value)}
+          autoComplete="address-line1"
+        />
+        <TextInput
+          id={SIGNUP_FIELDS.addressLine2}
+          name="addressLine2"
+          label="Address line 2 (optional)"
+          error={errorFor(SIGNUP_FIELDS.addressLine2)}
+          value={values.addressLine2}
+          onChange={(event) => update("addressLine2", event.target.value)}
+          autoComplete="address-line2"
+        />
+        <TextInput
+          id={SIGNUP_FIELDS.addressTown}
+          name="addressTown"
+          label="Town or city"
+          error={errorFor(SIGNUP_FIELDS.addressTown)}
+          value={values.addressTown}
+          onChange={(event) => update("addressTown", event.target.value)}
+          autoComplete="address-level2"
+          widthChars={30}
+        />
         <TextInput
           id={SIGNUP_FIELDS.addressPostcode}
           name="addressPostcode"
           label="Postcode"
           error={errorFor(SIGNUP_FIELDS.addressPostcode)}
           value={values.addressPostcode}
-          onChange={(event) =>
-            // A new postcode means the old address list no longer applies.
-            setValues((current) => ({
-              ...current,
-              addressPostcode: event.target.value,
-              addressOptions: null,
-              address: "",
-            }))
-          }
+          onChange={(event) => update("addressPostcode", event.target.value)}
           autoComplete="postal-code"
           autoCapitalize="characters"
           spellCheck={false}
-          widthChars={8}
+          widthChars={10}
         />
-        <Button
-          variant="secondary"
-          busy={finding}
-          busyLabel="Finding addresses…"
-          onClick={() => void findAddress()}
-        >
-          Find address
-        </Button>
-      </div>
-
-      <p role="status" className="visually-hidden">
-        {finding
-          ? "Finding addresses"
-          : values.addressOptions
-            ? `${addressCount} addresses found`
-            : ""}
-      </p>
-
-      {values.addressOptions ? (
-        <Select
-          id={SIGNUP_FIELDS.address}
-          name="address"
-          label="Select your address"
-          error={errorFor(SIGNUP_FIELDS.address)}
-          placeholder={`${addressCount} addresses found`}
-          options={values.addressOptions.map((address) => ({ value: address, label: address }))}
-          value={values.address}
-          onChange={(event) => {
-            update("address", event.target.value);
-            clearError(SIGNUP_FIELDS.address);
-          }}
-          autoComplete="off"
-        />
-      ) : null}
+      </fieldset>
 
       <Checkboxes
         id={SIGNUP_FIELDS.confirm}

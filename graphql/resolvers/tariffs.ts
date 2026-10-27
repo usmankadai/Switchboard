@@ -45,16 +45,21 @@ async function upstream<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
-async function resolveRegion(
+/**
+ * Finds the electricity region for a postcode. `field` names the form field
+ * errors belong to: "postcode" on step 1, "address-postcode" at signup.
+ */
+export async function resolveRegion(
   rawPostcode: string,
   { dataSources }: GraphQLContext,
+  field = "postcode",
 ): Promise<Region> {
   const postcode = normalisePostcode(rawPostcode);
   if (!postcode) {
     throw userError(
       "Enter a real postcode, like SW1A 1AA",
       ErrorCode.BadUserInput,
-      "postcode",
+      field,
     );
   }
 
@@ -67,7 +72,7 @@ async function resolveRegion(
       throw userError(
         "We could not find that postcode. Check it and try again",
         ErrorCode.PostcodeNotFound,
-        "postcode",
+        field,
       );
     }
     if (!regionCode) {
@@ -76,7 +81,7 @@ async function resolveRegion(
       throw userError(
         "Switchboard only covers Great Britain. Northern Ireland has a separate electricity market",
         ErrorCode.PostcodeNotFound,
-        "postcode",
+        field,
       );
     }
     return { code: regionCode, name: REGION_NAMES[regionCode] ?? regionCode };

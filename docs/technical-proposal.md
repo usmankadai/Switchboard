@@ -70,7 +70,7 @@ Next.js 16 on Vercel, TypeScript strict, Apollo Server in a route handler as a b
 
 In: electricity only, single-rate meters, Direct Debit prices inc VAT.
 
-Out, on purpose: gas and dual fuel (same datasource and resolver pattern, so a straightforward extension), Economy 7 and other multi-rate meters, real address lookup (Royal Mail PAF data is licensed; a labelled fake lookup is used), real payments.
+Out, on purpose: gas and dual fuel (same datasource and resolver pattern, so a straightforward extension), Economy 7 and other multi-rate meters, real address lookup (Royal Mail PAF and Ordnance Survey address data are licensed; the address is entered by hand, following the GOV.UK address pattern), real payments.
 
 ## Risks
 

@@ -5,10 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { GraphQLError } from "graphql";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JOURNEY_STORAGE_KEY, loadJourney, saveJourney } from "@/lib/journey-storage";
-import { POSTCODE_MESSAGES } from "@/lib/postcode";
 import { SIGNUP_MESSAGES } from "@/lib/signup-form";
 import { comparisonReply } from "../../../tests/e2e/graphqlMock";
-import { RegionLookupQuery } from "../postcode/PostcodeForm";
 import { TariffComparisonQuery } from "../tariffs/useTariffComparison";
 import { SIGNUP_UNAVAILABLE, StartSwitchMutation } from "./SignupForm";
 import { SignupStep } from "./SignupStep";
@@ -23,15 +21,17 @@ const comparison: MockLink.MockedResponse = {
   result: comparisonReply,
 };
 
-const region = (code: string, name: string): MockLink.MockedResponse => ({
-  request: { query: RegionLookupQuery, variables: { postcode: "SW1A 1AA" } },
-  result: { data: { region: { __typename: "Region", code, name } } },
-});
-
+/** Exactly what the server receives: no address lines, only the postcode. */
 const startSwitchRequest = {
   query: StartSwitchMutation,
   variables: {
-    input: { fullName: "Sam Taylor", email: "sam@example.com", regionCode: "C", tariffId: TARIFF_ID },
+    input: {
+      fullName: "Sam Taylor",
+      email: "sam@example.com",
+      regionCode: "C",
+      tariffId: TARIFF_ID,
+      supplyPostcode: "SW1A 2AA",
+    },
   },
 };
 
@@ -44,6 +44,17 @@ const switched: MockLink.MockedResponse = {
   },
 };
 
+const fieldError = (field: string, message: string, code = "BAD_USER_INPUT"): MockLink.MockedResponse => ({
+  request: startSwitchRequest,
+  result: {
+    errors: [
+      new GraphQLError(message, {
+        extensions: { code, field, ...(code === "BAD_USER_INPUT" ? { fieldErrors: [{ field, message }] } : {}) },
+      }),
+    ],
+  },
+});
+
 function renderStep(mocks: MockLink.MockedResponse[] = []) {
   const user = userEvent.setup();
   render(
@@ -52,33 +63,23 @@ function renderStep(mocks: MockLink.MockedResponse[] = []) {
     </MockedProvider>,
   );
 
+  const field = (name: string | RegExp) => screen.getByRole("textbox", { name });
   const submit = () => user.click(screen.getByRole("button", { name: "Confirm and switch" }));
   const summaryLinks = () =>
-    within(
-      screen.getByRole("heading", { name: "There is a problem" }).parentElement as HTMLElement,
-    )
+    within(screen.getByRole("heading", { name: "There is a problem" }).parentElement as HTMLElement)
       .getAllByRole("link")
       .map((link) => link.textContent);
 
-  async function fillDetails() {
-    await user.type(screen.getByRole("textbox", { name: "Full name" }), "Sam Taylor");
-    await user.type(screen.getByRole("textbox", { name: "Email address" }), "sam@example.com");
-  }
-
-  async function findAddress(postcode = "SW1A 1AA") {
-    await user.type(screen.getByRole("textbox", { name: "Postcode" }), postcode);
-    await user.click(screen.getByRole("button", { name: "Find address" }));
-  }
-
   async function completeForm() {
-    await fillDetails();
-    await findAddress();
-    const select = await screen.findByRole("combobox", { name: "Select your address" });
-    await user.selectOptions(select, "12 Sample Road, SW1A 1AA");
+    await user.type(field("Full name"), "Sam Taylor");
+    await user.type(field("Email address"), "sam@example.com");
+    await user.type(field("Address line 1"), "10 Downing Street");
+    await user.type(field("Town or city"), "London");
+    await user.type(field("Postcode"), "SW1A 2AA");
     await user.click(screen.getByRole("checkbox", { name: /I understand this is a demo/ }));
   }
 
-  return { user, submit, summaryLinks, fillDetails, findAddress, completeForm };
+  return { user, field, submit, summaryLinks, completeForm };
 }
 
 beforeEach(() => {
@@ -108,6 +109,21 @@ describe("SignupStep", () => {
     expect(await screen.findByText("Agile Octopus")).toBeInTheDocument();
   });
 
+  it("groups the supply address fields, as in the GOV.UK address pattern", () => {
+    const { field } = renderStep();
+    const group = screen.getByRole("group", { name: "Supply address" });
+    expect(within(group).getAllByRole("textbox").map((input) => input.getAttribute("autocomplete"))).toEqual([
+      "address-line1",
+      "address-line2",
+      "address-level2",
+      "postal-code",
+    ]);
+    expect(field("Address line 2 (optional)")).toBeInTheDocument();
+    // No made-up addresses and no lookup any more.
+    expect(screen.queryByRole("button", { name: "Find address" })).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
   it("lists every missing answer in page order", async () => {
     const { submit, summaryLinks } = renderStep();
     await submit();
@@ -115,58 +131,27 @@ describe("SignupStep", () => {
     expect(summaryLinks()).toEqual([
       SIGNUP_MESSAGES.nameEmpty,
       SIGNUP_MESSAGES.emailEmpty,
-      POSTCODE_MESSAGES.empty,
+      "Enter address line 1, typically the building and street",
+      "Enter town or city",
+      "Enter postcode",
       SIGNUP_MESSAGES.confirm,
     ]);
+    expect(screen.getByRole("link", { name: "Enter town or city" })).toHaveAttribute(
+      "href",
+      "#address-town",
+    );
     expect(document.title).toBe("Error: Sign up | Switchboard");
   });
 
-  it("checks the postcode format before looking it up", async () => {
-    const { findAddress } = renderStep();
-    await findAddress("SW1");
-    expect(screen.getByRole("link", { name: POSTCODE_MESSAGES.invalid })).toBeInTheDocument();
-  });
-
-  it("stops a supply address in a different region from the prices", async () => {
-    const { findAddress } = renderStep([region("A", "Eastern England")]);
-    await findAddress();
-    expect(
-      await screen.findByRole("link", {
-        name: /This postcode is in Eastern England, but your prices are for London/,
-      }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("combobox")).toBeNull();
-  });
-
-  it("finds demo addresses, then asks for one to be picked", async () => {
-    const { findAddress, submit, fillDetails, user } = renderStep([region("C", "London")]);
-    await fillDetails();
-    await findAddress();
-
-    const select = await screen.findByRole("combobox", { name: "Select your address" });
-    expect(within(select).getAllByRole("option")).toHaveLength(6);
-    // Announced to screen readers, as the list appears out of their view.
-    expect(screen.getByText("5 addresses found", { selector: '[role="status"]' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("checkbox", { name: /I understand this is a demo/ }));
+  it("checks the postcode format before sending anything", async () => {
+    const { user, field, submit } = renderStep();
+    await user.type(field("Postcode"), "SW1");
     await submit();
-    expect(screen.getByRole("link", { name: SIGNUP_MESSAGES.addressNotSelected })).toHaveAttribute(
-      "href",
-      "#address",
-    );
+    expect(screen.getByRole("link", { name: "Enter a full UK postcode" })).toBeInTheDocument();
   });
 
-  it("forgets the address list when the postcode changes", async () => {
-    const { findAddress, user } = renderStep([region("C", "London")]);
-    await findAddress();
-    await screen.findByRole("combobox", { name: "Select your address" });
-
-    await user.type(screen.getByRole("textbox", { name: "Postcode" }), "X");
-    expect(screen.queryByRole("combobox")).toBeNull();
-  });
-
-  it("sends the details, keeps only the reference and moves on", async () => {
-    const { completeForm, submit } = renderStep([region("C", "London"), switched]);
+  it("sends only name, email and postcode, keeps only the reference, and moves on", async () => {
+    const { completeForm, submit } = renderStep([switched]);
     await completeForm();
     await submit();
 
@@ -174,41 +159,51 @@ describe("SignupStep", () => {
     expect(loadJourney().reference).toBe("SB-3F9A1C2E");
 
     const stored = window.localStorage.getItem(JOURNEY_STORAGE_KEY) ?? "";
-    expect(stored).not.toContain("Sam");
-    expect(stored).not.toContain("example.com");
-    expect(stored).not.toContain("Sample Road");
+    for (const personal of ["Sam", "example.com", "Downing", "London", "SW1A"]) {
+      expect(stored).not.toContain(personal);
+    }
+  });
+
+  it("shows the server's region check against the postcode field", async () => {
+    const message =
+      "This postcode is in North Scotland, but your prices are for London. Go back to the start to get prices for this address.";
+    const { completeForm, submit, field } = renderStep([fieldError("address-postcode", message)]);
+    await completeForm();
+    await submit();
+
+    expect(await screen.findByRole("link", { name: message })).toHaveAttribute("href", "#address-postcode");
+    expect(field("Postcode")).toHaveAttribute("aria-invalid", "true");
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows a postcode the server could not find against the postcode field", async () => {
+    const { completeForm, submit } = renderStep([
+      fieldError(
+        "address-postcode",
+        "We could not find that postcode. Check it and try again",
+        "POSTCODE_NOT_FOUND",
+      ),
+    ]);
+    await completeForm();
+    await submit();
+
+    expect(
+      await screen.findByRole("link", { name: "We could not find that postcode. Check it and try again" }),
+    ).toHaveAttribute("href", "#address-postcode");
   });
 
   it("shows the server's field errors", async () => {
-    const { completeForm, submit } = renderStep([
-      region("C", "London"),
-      {
-        request: startSwitchRequest,
-        result: {
-          errors: [
-            new GraphQLError(SIGNUP_MESSAGES.emailInvalid, {
-              extensions: {
-                code: "BAD_USER_INPUT",
-                field: "email",
-                fieldErrors: [{ field: "email", message: SIGNUP_MESSAGES.emailInvalid }],
-              },
-            }),
-          ],
-        },
-      },
-    ]);
+    const { completeForm, submit } = renderStep([fieldError("email", SIGNUP_MESSAGES.emailInvalid)]);
     await completeForm();
     await submit();
 
     expect(
       await screen.findByRole("link", { name: SIGNUP_MESSAGES.emailInvalid }),
     ).toHaveAttribute("href", "#email");
-    expect(push).not.toHaveBeenCalled();
   });
 
   it("offers a retry when the service is down", async () => {
     const { completeForm, submit } = renderStep([
-      region("C", "London"),
       { request: startSwitchRequest, error: new Error("Failed to fetch") },
       switched,
     ]);
