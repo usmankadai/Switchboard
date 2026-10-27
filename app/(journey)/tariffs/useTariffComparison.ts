@@ -16,6 +16,7 @@ export const TariffComparisonQuery = graphql(`
         displayName
         estimatedAnnualCostPence
         ...TariffCard_quote
+        ...TariffTable_quote
         ...AgileExplainer_quote
       }
     }

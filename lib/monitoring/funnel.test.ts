@@ -25,8 +25,22 @@ describe("parseFunnelEvent", () => {
     ["an extra field", { sessionId: id, step: "usage", action: "viewed", email: "a@b.com" }],
     ["a made-up session id", { sessionId: "sam@example.com", step: "usage", action: "viewed" }],
     ["not an object", "usage viewed"],
+    ["an unknown layout", { sessionId: id, step: "tariffs", action: "viewed", variant: "grid" }],
+    ["a layout on another step", { sessionId: id, step: "usage", action: "viewed", variant: "table" }],
   ])("rejects %s", (_label, value) => {
     expect(parseFunnelEvent(value)).toBeNull();
+  });
+});
+
+describe("A/B test layout", () => {
+  it("is accepted on the tariffs step", () => {
+    expect(parseFunnelEvent({ sessionId: id, step: "tariffs", action: "completed", detail: "tariff-fixed", variant: "table" })).toEqual({
+      sessionId: id,
+      step: "tariffs",
+      action: "completed",
+      detail: "tariff-fixed",
+      variant: "table",
+    });
   });
 });
 

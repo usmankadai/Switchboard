@@ -187,3 +187,32 @@
   color: var(--colour-text-muted);
   font-size: 0.875rem;
 }
+
+/* Tariff layout A/B test (ADR 3). */
+.experiment {
+  margin: var(--space-5) 0;
+}
+
+.experimentTable {
+  width: 100%;
+  margin-bottom: var(--space-3);
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.experimentTable th,
+.experimentTable td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--colour-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.experimentTable td {
+  font-variant-numeric: tabular-nums;
+}
+
+.experimentTable thead th {
+  color: var(--colour-text-muted);
+  font-size: 0.9375rem;
+}

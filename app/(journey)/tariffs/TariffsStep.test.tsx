@@ -5,12 +5,19 @@ import userEvent from "@testing-library/user-event";
 import { GraphQLError } from "graphql";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadJourney, saveJourney } from "@/lib/journey-storage";
+import type { TariffLayout } from "@/lib/experiments";
 import { TariffsStep } from "./TariffsStep";
 import { agileByTimeOfDay } from "../../../tests/e2e/graphqlMock";
 import { COMPARISON_UNAVAILABLE, TariffComparisonQuery } from "./useTariffComparison";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+
+// Watch which A/B test layout funnel events report.
+const trackFunnel = vi.fn();
+vi.mock("@/lib/monitoring/funnel", () => ({
+  trackFunnel: (...args: unknown[]) => trackFunnel(...args),
+}));
 
 const request = {
   query: TariffComparisonQuery,
@@ -88,11 +95,11 @@ const upstreamError: MockLink.MockedResponse = {
   },
 };
 
-function renderStep(mocks: MockLink.MockedResponse[]) {
+function renderStep(mocks: MockLink.MockedResponse[], layout?: TariffLayout) {
   const user = userEvent.setup();
   render(
     <MockedProvider mocks={mocks}>
-      <TariffsStep />
+      <TariffsStep layout={layout} />
     </MockedProvider>,
   );
   return { user };
@@ -102,6 +109,7 @@ const cards = () => within(screen.getByRole("list", { name: "Tariffs" })).getAll
 
 beforeEach(() => {
   push.mockReset();
+  trackFunnel.mockReset();
   saveJourney({ regionCode: "C", annualKwh: 2700, usage: { method: "known" } });
 });
 
@@ -216,5 +224,61 @@ describe("TariffsStep", () => {
     expect(
       await screen.findByText("There are no tariffs we can show for this postcode right now."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("TariffsStep, comparison table layout (A/B test)", () => {
+  it("shows the same tariffs and facts as a table, with row and column headers", async () => {
+    renderStep([comparison], "table");
+    const table = await screen.findByRole("table", { name: "Tariffs compared" });
+    expect(screen.queryByRole("list", { name: "Tariffs" })).toBeNull();
+
+    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
+      "Tariff",
+      "Estimated cost",
+      "Unit rate",
+      "Standing charge",
+      "Contract",
+      "Exit fee",
+      "Choose a tariff",
+    ]);
+    const fixed = within(table).getByRole("rowheader", { name: /Octopus 12M Fixed/ });
+    const row = fixed.closest("tr") as HTMLElement;
+    expect(within(row).getByText("£950 a year")).toBeInTheDocument();
+    expect(within(row).getByText("Price fixed for 12 months")).toBeInTheDocument();
+    expect(within(row).getByText("£50.00 to leave early")).toBeInTheDocument();
+  });
+
+  it("labels the cheapest tariff and Agile's meter requirement, as the cards do", async () => {
+    renderStep([comparison], "table");
+    const table = await screen.findByRole("table", { name: "Tariffs compared" });
+    expect(within(table).getByRole("rowheader", { name: /Flexible Octopus/ })).toHaveTextContent(
+      "Lowest estimated cost",
+    );
+    expect(within(table).getByRole("rowheader", { name: /Agile Octopus/ })).toHaveTextContent(
+      "Needs a smart meter that sends half-hourly readings.",
+    );
+  });
+
+  it("can be scrolled by keyboard users on narrow screens", async () => {
+    renderStep([comparison], "table");
+    const region = await screen.findByRole("region", { name: "Tariffs compared" });
+    expect(region).toHaveAttribute("tabindex", "0");
+  });
+
+  it("saves the choice and reports the layout to the funnel", async () => {
+    const { user } = renderStep([comparison], "table");
+    await user.click(await screen.findByRole("button", { name: "Choose Agile Octopus" }));
+
+    expect(loadJourney().tariffId).toBe("E-1R-AGILE-24-10-01-C");
+    expect(push).toHaveBeenCalledWith("/signup");
+    expect(trackFunnel).toHaveBeenCalledWith("tariffs", "viewed", undefined, "table");
+    expect(trackFunnel).toHaveBeenCalledWith("tariffs", "completed", "tariff-agile", "table");
+  });
+
+  it("reports the cards layout by default", async () => {
+    renderStep([comparison]);
+    await screen.findByRole("list", { name: "Tariffs" });
+    expect(trackFunnel).toHaveBeenCalledWith("tariffs", "viewed", undefined, "cards");
   });
 });

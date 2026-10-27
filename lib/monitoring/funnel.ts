@@ -1,3 +1,5 @@
+import { isTariffLayout, type TariffLayout } from "../experiments";
+
 /**
  * Anonymous journey funnel events: which steps people see and complete, so
  * we can see where they drop off. "Abandoned" is worked out later from a
@@ -31,6 +33,8 @@ export type FunnelEvent = {
   step: FunnelStep;
   action: FunnelAction;
   detail?: FunnelDetail;
+  /** Which layout of the tariff A/B test this session saw. Tariffs step only. */
+  variant?: TariffLayout;
 };
 
 const SESSION_ID = /^[0-9a-f-]{36}$/;
@@ -39,7 +43,7 @@ const SESSION_ID = /^[0-9a-f-]{36}$/;
 export function parseFunnelEvent(value: unknown): FunnelEvent | null {
   if (typeof value !== "object" || value === null) return null;
   const raw = value as Record<string, unknown>;
-  const allowedKeys = new Set(["sessionId", "step", "action", "detail"]);
+  const allowedKeys = new Set(["sessionId", "step", "action", "detail", "variant"]);
   if (Object.keys(raw).some((key) => !allowedKeys.has(key))) return null;
 
   if (typeof raw.sessionId !== "string" || !SESSION_ID.test(raw.sessionId)) return null;
@@ -48,12 +52,17 @@ export function parseFunnelEvent(value: unknown): FunnelEvent | null {
   if (raw.detail !== undefined && !(FUNNEL_DETAILS as readonly unknown[]).includes(raw.detail)) {
     return null;
   }
+  // The A/B test is only on the tariffs step.
+  if (raw.variant !== undefined && (raw.step !== "tariffs" || !isTariffLayout(raw.variant))) {
+    return null;
+  }
 
   return {
     sessionId: raw.sessionId,
     step: raw.step as FunnelStep,
     action: raw.action as FunnelAction,
     ...(raw.detail ? { detail: raw.detail as FunnelDetail } : {}),
+    ...(raw.variant ? { variant: raw.variant as TariffLayout } : {}),
   };
 }
 
@@ -76,12 +85,23 @@ function sessionId(): string | null {
  * Send one event. Fire and forget: it never throws and never blocks the
  * journey. Uses sendBeacon so it survives the page changing.
  */
-export function trackFunnel(step: FunnelStep, action: FunnelAction, detail?: FunnelDetail): void {
+export function trackFunnel(
+  step: FunnelStep,
+  action: FunnelAction,
+  detail?: FunnelDetail,
+  variant?: TariffLayout,
+): void {
   if (typeof navigator === "undefined" || typeof navigator.sendBeacon !== "function") return;
   const id = sessionId();
   if (!id) return;
 
-  const event: FunnelEvent = { sessionId: id, step, action, ...(detail ? { detail } : {}) };
+  const event: FunnelEvent = {
+    sessionId: id,
+    step,
+    action,
+    ...(detail ? { detail } : {}),
+    ...(variant ? { variant } : {}),
+  };
   try {
     navigator.sendBeacon(
       "/api/events",

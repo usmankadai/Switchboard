@@ -19,5 +19,16 @@ export async function expectNoAxeViolations(page: Page) {
   expect(summary, "accessibility violations").toEqual([]);
 }
 
-export const test = base;
+/**
+ * Every test starts in the "cards" group of the tariff layout A/B test, so
+ * results never depend on a coin toss. Tests about the experiment itself
+ * clear or change this cookie.
+ */
+export const test = base.extend({
+  // Playwright passes the fixture callback second; named `provide` so React lint rules do not mistake it for a hook.
+  context: async ({ context, baseURL }, provide) => {
+    await context.addCookies([{ name: "sb-tariff-layout", value: "cards", url: baseURL! }]);
+    await provide(context);
+  },
+});
 export { expect };

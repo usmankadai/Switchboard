@@ -241,7 +241,21 @@ End-to-end tests:
 
 **See it in this repo:** [load-tests/comparison.js](load-tests/comparison.js), [load-tests/run-local.sh](load-tests/run-local.sh), and the "Load test" section of the [README](README.md).
 
-## 12. Monitoring and analytics
+## 12. A/B testing
+
+**Used in Switchboard for:** testing whether a comparison table gets more people to choose a tariff than cards.
+
+- [Next.js: Proxy](https://nextjs.org/docs/app/getting-started/proxy) and its [reference](https://nextjs.org/docs/app/api-reference/file-conventions/proxy): assigning a variant before the page renders.
+- [MDN: cookies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies): keeping a visitor in one group.
+- [GOV.UK: A/B testing](https://www.gov.uk/guidance/ab-testing-comparative-studies): when and how to run one.
+- [How not to run an A/B test](https://www.evanmiller.org/how-not-to-run-an-ab-test.html) by Evan Miller: why you must not stop as soon as a result looks significant. And his [sample size calculator](https://www.evanmiller.org/ab-testing/sample-size.html).
+- [Comparing two proportions](https://online.stat.psu.edu/stat415/lesson/9/9.4) (Penn State): the z-test behind the verdict.
+- [Trustworthy Online Controlled Experiments](https://experimentguide.com/): the standard book on experimentation, by Kohavi, Tang and Xu.
+- [W3C tables tutorial](https://www.w3.org/WAI/tutorials/tables/), [CSS `position: sticky`](https://developer.mozilla.org/en-US/docs/Web/CSS/position) and [scrollable regions must be focusable](https://dequeuniversity.com/rules/axe/4.10/scrollable-region-focusable): building the accessible comparison table.
+
+**See it in this repo:** [proxy.ts](proxy.ts), [lib/experiments.ts](lib/experiments.ts), [lib/monitoring/abTest.ts](lib/monitoring/abTest.ts), [app/(journey)/tariffs/TariffTable.tsx](app/(journey)/tariffs/TariffTable.tsx), [ADR 3](docs/decisions/0003-tariff-layout-ab-test.md).
+
+## 13. Monitoring and analytics
 
 **Used in Switchboard for:** error tracking, real-user speed data and an anonymous funnel, all without personal data.
 
@@ -252,7 +266,7 @@ End-to-end tests:
 
 **See it in this repo:** [lib/monitoring/](lib/monitoring), [app/funnel/page.tsx](app/funnel/page.tsx), [instrumentation-client.ts](instrumentation-client.ts).
 
-## 13. Privacy and data protection (UK)
+## 14. Privacy and data protection (UK)
 
 **Used in Switchboard for:** no personal data is stored, logged or sent to monitoring, and postcodes never appear in URLs.
 
@@ -260,14 +274,14 @@ End-to-end tests:
 - [Data minimisation](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/data-minimisation/): collect only what you need. The guiding idea of this project.
 - [ICO: storage and access technologies](https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-the-use-of-storage-and-access-technologies/): the rules on cookies, `localStorage` and analytics (PECR).
 
-## 14. Deployment
+## 15. Deployment
 
 - [Vercel docs](https://vercel.com/docs) and [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
 - [The Twelve-Factor App](https://12factor.net/): why settings such as the Sentry DSN live in environment variables.
 
 **See it in this repo:** [.env.example](.env.example).
 
-## 15. The energy data and domain
+## 16. The energy data and domain
 
 **Used in Switchboard for:** live tariffs and prices, and understanding what they mean.
 
@@ -281,7 +295,7 @@ End-to-end tests:
 
 **See it in this repo:** [graphql/datasources/octopus.ts](graphql/datasources/octopus.ts), [lib/products.ts](lib/products.ts), [lib/estimate.ts](lib/estimate.ts), [lib/usage.ts](lib/usage.ts).
 
-## 16. Ways of working
+## 17. Ways of working
 
 **Used in Switchboard for:** writing down decisions, and writing in plain English.
 

@@ -18,6 +18,7 @@ Everything Switchboard uses, what it is for, and where it lives. Versions are th
 | --- | --- | --- | --- |
 | `next` | 16.4.3 | The framework: App Router, Server Components, route handlers, Cache Components (`'use cache: remote'`), Partial Prefetching | `app/`, `next.config.ts` |
 | `react`, `react-dom` | 19.3.0 | UI | everywhere |
+| `proxy.ts` | Next.js 16 | Runs before rendering to assign the tariff layout A/B test (Next.js 16's new name for middleware) | `proxy.ts` |
 | `server-only` | 0.0.1 | Stops server code (the funnel store) being imported into the browser by mistake | `lib/monitoring/funnelStore.ts` |
 | CSS Modules | built into Next.js | Styling, scoped per component. No CSS framework | `*.module.css`, `app/globals.css` |
 | Geist font | via `next/font/google` | The typeface, self-hosted by Next.js at build time | `app/layout.tsx` |

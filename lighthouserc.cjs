@@ -17,7 +17,9 @@
 const { chromium } = require("@playwright/test");
 
 const PORT = 3140;
-const pages = ["/", "/postcode", "/usage", "/tariffs", "/signup"];
+// Both layouts of the tariff A/B test are measured directly: /tariffs itself
+// would land on a random layout in each run (see proxy.ts and ADR 3).
+const pages = ["/", "/postcode", "/usage", "/tariffs/cards", "/tariffs/table", "/signup"];
 
 module.exports = {
   ci: {

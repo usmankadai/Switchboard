@@ -1,4 +1,5 @@
 import "server-only";
+import { TARIFF_LAYOUTS, type TariffLayout } from "../experiments";
 import {
   FUNNEL_ACTIONS,
   FUNNEL_DETAILS,
@@ -22,6 +23,8 @@ import {
 export type FunnelCounts = {
   steps: Record<FunnelStep, Record<FunnelAction, number>>;
   details: Record<FunnelDetail, number>;
+  /** The tariff layout A/B test: tariffs step sessions per layout. */
+  experiment: Record<TariffLayout, Record<FunnelAction, number>>;
 };
 
 export interface FunnelStore {
@@ -37,10 +40,15 @@ export const RETENTION_SECONDS = 90 * 24 * 60 * 60;
 const stepKey = (day: string, step: FunnelStep, action: FunnelAction) =>
   `funnel:${day}:${step}:${action}`;
 const detailKey = (day: string, detail: FunnelDetail) => `funnel:${day}:detail:${detail}`;
+const experimentKey = (day: string, layout: TariffLayout, action: FunnelAction) =>
+  `funnel:${day}:exp:tariff-layout:${layout}:${action}`;
 
 function keysFor(event: FunnelEvent, day: string): string[] {
   const keys = [stepKey(day, event.step, event.action)];
   if (event.detail) keys.push(detailKey(day, event.detail));
+  if (event.variant && event.step === "tariffs") {
+    keys.push(experimentKey(day, event.variant, event.action));
+  }
   return keys;
 }
 
@@ -60,7 +68,14 @@ async function countAll(
   for (const detail of FUNNEL_DETAILS) {
     details[detail] = await distinct(days.map((day) => detailKey(day, detail)));
   }
-  return { steps, details };
+  const experiment = {} as FunnelCounts["experiment"];
+  for (const layout of TARIFF_LAYOUTS) {
+    experiment[layout] = {} as Record<FunnelAction, number>;
+    for (const action of FUNNEL_ACTIONS) {
+      experiment[layout][action] = await distinct(days.map((day) => experimentKey(day, layout, action)));
+    }
+  }
+  return { steps, details, experiment };
 }
 
 /**
@@ -141,7 +156,14 @@ export function createRedisStore(
       }
       const details = {} as FunnelCounts["details"];
       for (const detail of FUNNEL_DETAILS) details[detail] = read(collect.details[detail]);
-      return { steps, details };
+      const experiment = {} as FunnelCounts["experiment"];
+      for (const layout of TARIFF_LAYOUTS) {
+        experiment[layout] = {} as Record<FunnelAction, number>;
+        for (const action of FUNNEL_ACTIONS) {
+          experiment[layout][action] = read(collect.experiment[layout][action]);
+        }
+      }
+      return { steps, details, experiment };
     },
   };
 }

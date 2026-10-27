@@ -14,6 +14,7 @@ function counts(
     details: Object.fromEntries(
       FUNNEL_DETAILS.map((detail) => [detail, details[detail] ?? 0]),
     ) as FunnelCounts["details"],
+    experiment: { cards: { viewed: 0, completed: 0 }, table: { viewed: 0, completed: 0 } },
   };
 }
 

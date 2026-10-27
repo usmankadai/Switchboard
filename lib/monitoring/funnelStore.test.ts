@@ -37,6 +37,19 @@ describe("memory store", () => {
     expect((await store.counts(["2026-10-25"])).steps.postcode.viewed).toBe(0);
   });
 
+  it("counts tariffs step sessions per A/B test layout", async () => {
+    const store = createMemoryStore();
+    await store.record(event(1, { step: "tariffs", action: "viewed", variant: "table" }), "2026-10-27");
+    await store.record(event(1, { step: "tariffs", action: "completed", variant: "table" }), "2026-10-27");
+    await store.record(event(2, { step: "tariffs", action: "viewed", variant: "cards" }), "2026-10-27");
+    // A variant on any other step is ignored.
+    await store.record(event(3, { step: "usage", action: "viewed", variant: "cards" }), "2026-10-27");
+    expect((await store.counts(["2026-10-27"])).experiment).toEqual({
+      cards: { viewed: 1, completed: 0 },
+      table: { viewed: 1, completed: 1 },
+    });
+  });
+
   it("counts details such as the chosen tariff", async () => {
     const store = createMemoryStore();
     await store.record(event(1, { step: "tariffs", action: "completed", detail: "tariff-agile" }), "2026-10-27");
@@ -71,8 +84,8 @@ describe("Redis store", () => {
   });
 
   it("reads every count in one round trip, merging days", async () => {
-    // 5 steps × 2 actions, then 6 details.
-    const fetchMock = fakeRedis(Array.from({ length: 16 }, (_, index) => index));
+    // 5 steps × 2 actions, then 6 details, then 2 layouts × 2 actions.
+    const fetchMock = fakeRedis(Array.from({ length: 20 }, (_, index) => index));
     const store = createRedisStore("https://redis.example", "secret", fetchMock);
     const counts = await store.counts(["2026-10-26", "2026-10-27"]);
 
@@ -86,6 +99,15 @@ describe("Redis store", () => {
     expect(counts.steps.postcode).toEqual({ viewed: 0, completed: 1 });
     expect(counts.steps.confirmation).toEqual({ viewed: 8, completed: 9 });
     expect(counts.details["tariff-agile"]).toBe(15);
+    expect(counts.experiment).toEqual({
+      cards: { viewed: 16, completed: 17 },
+      table: { viewed: 18, completed: 19 },
+    });
+    expect(commands.at(-1)).toEqual([
+      "PFCOUNT",
+      "funnel:2026-10-26:exp:tariff-layout:table:completed",
+      "funnel:2026-10-27:exp:tariff-layout:table:completed",
+    ]);
   });
 
   it("reports Redis errors", async () => {

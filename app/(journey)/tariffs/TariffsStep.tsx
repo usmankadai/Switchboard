@@ -13,17 +13,24 @@ import { cheapestQuoteId, describeCheckedAt, describeKinds } from "@/lib/compari
 import { saveJourney } from "@/lib/journey-storage";
 import { trackFunnel, type FunnelDetail } from "@/lib/monitoring/funnel";
 import { REGION_NAMES } from "@/lib/regions";
+import type { TariffLayout } from "@/lib/experiments";
 import { formatKwh } from "@/lib/usage";
 import { stepCaption } from "../steps";
 import { AgileExplainer } from "./AgileExplainer";
 import { TariffCard } from "./TariffCard";
+import { TariffTable } from "./TariffTable";
 import styles from "./tariffs.module.css";
 import { comparisonErrorMessage, useTariffComparison } from "./useTariffComparison";
 
-export function TariffsStep() {
+/**
+ * Step 3. `layout` is the tariff layout A/B test variant (ADR 3), chosen in
+ * proxy.ts before the page renders. Everything except the list of tariffs
+ * is the same in both.
+ */
+export function TariffsStep({ layout = "cards" }: { layout?: TariffLayout }) {
   const router = useRouter();
   const journey = useSavedJourney();
-  useFunnelStep("tariffs");
+  useFunnelStep("tariffs", layout);
   const { data, error, loading, refetch } = useTariffComparison(journey);
   const problemRef = useRef<HTMLDivElement>(null);
   const problemHeadingId = useId();
@@ -45,6 +52,7 @@ export function TariffsStep() {
       "tariffs",
       "completed",
       kind ? (`tariff-${kind.toLowerCase()}` as FunnelDetail) : undefined,
+      layout,
     );
     markStepNavigation();
     router.push("/signup");
@@ -138,16 +146,20 @@ export function TariffsStep() {
                   </Button>
                 </div>
               ) : null}
-              <ul className={styles.cards} aria-label="Tariffs">
-                {comparison.quotes.map((quote) => (
-                  <TariffCard
-                    key={quote.id}
-                    quote={quote}
-                    isCheapest={quote.id === cheapest}
-                    onChoose={choose}
-                  />
-                ))}
-              </ul>
+              {layout === "table" ? (
+                <TariffTable quotes={comparison.quotes} cheapestId={cheapest} onChoose={choose} />
+              ) : (
+                <ul className={styles.cards} aria-label="Tariffs">
+                  {comparison.quotes.map((quote) => (
+                    <TariffCard
+                      key={quote.id}
+                      quote={quote}
+                      isCheapest={quote.id === cheapest}
+                      onChoose={choose}
+                    />
+                  ))}
+                </ul>
+              )}
               {agile ? <AgileExplainer quote={agile} /> : null}
               <p className={styles.checkedAt}>
                 {describeCheckedAt(comparison.pricesCheckedAt)}.

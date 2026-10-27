@@ -67,6 +67,7 @@ Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test
     /confirmation
   /api/graphql/route.ts # Apollo Server handler
   /api/events/route.ts  # anonymous funnel events
+  /(journey)/tariffs/[layout] # prebuilt "cards" and "table" layouts for the A/B test
   /funnel               # funnel dashboard (server-rendered, no client JS)
 /graphql
   /schema               # SDL type definitions (in .ts files with a /* GraphQL */ tag)
@@ -78,6 +79,7 @@ Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test
 /generated              # codegen output, never edit by hand
 /tests/e2e              # Playwright specs
 /load-tests             # k6 scripts
+proxy.ts                # assigns the tariff layout A/B test before rendering (ADR 3)
 /docs
   technical-proposal.md # problem, options, decision, risks
   decisions/            # short ADRs for notable choices
@@ -113,6 +115,13 @@ The REST API needs several calls to build one comparison screen (region lookup, 
 - **Field data:** measure real INP (under 200ms), LCP and CLS with Vercel Speed Insights or the `web-vitals` library.
 - **Pages stay alive after navigation.** With Cache Components, Next.js keeps up to 3 recent routes mounted but hidden (React `<Activity>`), with their state and DOM. So: ids must be unique across pages (use `useId` for shared components); reset transient state such as busy flags in a `useLayoutEffect` cleanup; and in Playwright, scope text queries to visible elements because hidden steps are still in the DOM. Read `node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`.
 - Keep client JavaScript lean. Prefer Server Components; use Client Components only where interactivity is needed.
+
+### A/B testing
+
+- The tariff layout experiment (ADR 3) is assigned in `proxy.ts` (Next.js 16's name for middleware), which rewrites `/tariffs` to `/tariffs/cards` or `/tariffs/table`. Both are prebuilt static pages, so there is no flicker. `TARIFF_LAYOUT_EXPERIMENT=off` sends everyone to the cards.
+- Variants must differ only in what is being tested. Shared wording lives in `app/(journey)/tariffs/tariffCopy.ts`.
+- Funnel events from the tested step carry `variant`; the statistics are in `lib/monitoring/abTest.ts` and the result is on `/funnel`. Never declare a winner below the minimum sample, and split results by device before rolling out.
+- Playwright tests pin a layout with the `sb-tariff-layout` cookie (the fixture defaults to `cards`).
 
 ## Coding conventions
 
@@ -171,7 +180,7 @@ Polish beats breadth. Priority order when time is short:
 3. Caching, error handling and performance budgets
 4. Monitoring and funnel tracking
 5. Load test and its write-up in the README (done)
-6. Nice to have: A/B test at the edge, Storybook for the form kit
+6. Nice to have: A/B test before rendering (done, ADR 3), Storybook for the form kit
 
 Never cut accessibility or tests to add a lower-priority feature.
 

@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import {
+  analyseTariffLayoutTest,
+  describeVerdict,
+  SIGNIFICANCE_LEVEL,
+  type ExperimentReport,
+} from "@/lib/monitoring/abTest";
 import { buildFunnelReport, formatShare, type SplitItem } from "@/lib/monitoring/funnelReport";
 import { getFunnelStore, lastUkDays } from "@/lib/monitoring/funnelStore";
 import styles from "./funnel.module.css";
@@ -49,7 +55,9 @@ async function FunnelDashboard({ searchParams }: { searchParams: PageProps<"/fun
 
   const days = parseRange(range);
   const store = getFunnelStore();
-  const report = buildFunnelReport(await store.counts(lastUkDays(new Date(), days)));
+  const counts = await store.counts(lastUkDays(new Date(), days));
+  const report = buildFunnelReport(counts);
+  const experiment = analyseTariffLayoutTest(counts.experiment);
   const rangeLabel = RANGES.find((item) => item.days === days)!.label.toLowerCase();
 
   return (
@@ -126,6 +134,7 @@ async function FunnelDashboard({ searchParams }: { searchParams: PageProps<"/fun
             <Split heading="Tariffs chosen" items={report.tariffChoices} />
           </div>
 
+
           <details className={styles.tableView}>
             <summary>Show the funnel as a table</summary>
             <table>
@@ -153,6 +162,9 @@ async function FunnelDashboard({ searchParams }: { searchParams: PageProps<"/fun
         </>
       )}
 
+      {/* Shown even before the funnel has data: the test runs on its own events. */}
+      <Experiment report={experiment} />
+
       <p className={styles.footnote}>
         {store.kind === "redis"
           ? "Stored in Redis for 90 days."
@@ -160,6 +172,52 @@ async function FunnelDashboard({ searchParams }: { searchParams: PageProps<"/fun
         No personal data is collected: each session is a random id that cannot be read back.
       </p>
     </>
+  );
+}
+
+/** The tariff layout A/B test (ADR 3). */
+function Experiment({ report }: { report: ExperimentReport }) {
+  return (
+    <section aria-labelledby="experiment-heading" className={styles.experiment}>
+      <h2 id="experiment-heading">Experiment: tariff layout</h2>
+      <p>
+        Half of visitors see the tariffs as cards, half as a comparison table. Which gets more
+        people to choose a tariff?
+      </p>
+      <table className={styles.experimentTable}>
+        <caption className="visually-hidden">Choose rate by layout</caption>
+        <thead>
+          <tr>
+            <th scope="col">Layout</th>
+            <th scope="col">Saw tariffs</th>
+            <th scope="col">Chose a tariff</th>
+            <th scope="col">Choose rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {report.variants.map((variant) => (
+            <tr key={variant.layout}>
+              <th scope="row">{variant.label}</th>
+              <td>{whole.format(variant.sessions)}</td>
+              <td>{whole.format(variant.conversions)}</td>
+              <td>
+                {formatShare(variant.rate)}
+                <Bar share={variant.rate} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className={styles.callout}>
+        <strong>Result:</strong> {describeVerdict(report)}
+      </p>
+      <p className={styles.footnote}>
+        Plan for about {whole.format(report.plannedSessionsPerVariant)} sessions per layout to
+        reliably spot a 5 point change ({Math.round((1 - SIGNIFICANCE_LEVEL) * 100)}% confidence, 80%
+        power). Decide when to stop before looking: stopping as soon as a result looks significant
+        makes false winners much more likely.
+      </p>
+    </section>
   );
 }
 

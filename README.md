@@ -63,11 +63,12 @@ Lighthouse CI, median of 5 runs, mobile with slow 4G and a 4x CPU slowdown appli
 
 | Page | LCP | TBT | CLS | JavaScript |
 | --- | --- | --- | --- | --- |
-| Landing | 1.37s | 29ms | 0 | 212 KB |
-| Postcode | 1.34s | 38ms | 0 | 212 KB |
-| Usage | 1.37s | 35ms | 0 | 218 KB |
-| Tariffs | 1.36s | 37ms | 0 | 227 KB |
-| Sign up | 1.36s | 36ms | 0 | 227 KB |
+| Landing | 1.42s | 58ms | 0 | 212 KB |
+| Postcode | 1.35s | 60ms | 0 | 212 KB |
+| Usage | 1.42s | 57ms | 0 | 218 KB |
+| Tariffs (cards) | 1.34s | 36ms | 0 | 230 KB |
+| Tariffs (table, A/B test) | 1.37s | 40ms | 0 | 230 KB |
+| Sign up | 1.37s | 74ms | 0 | 229 KB |
 
 Budgets: LCP 2.5s, TBT 200ms, CLS 0.1, JavaScript 250 KB, accessibility 100. All pages score 100 for accessibility. See [ADR 2](docs/decisions/0002-caching-resilience-and-performance-budgets.md) for why throttling is applied rather than simulated.
 
@@ -78,6 +79,16 @@ Budgets: LCP 2.5s, TBT 200ms, CLS 0.1, JavaScript 250 KB, accessibility 100. All
 - **Anonymous by design.** Events are built only from allow-listed values with a random per-tab session id. Every count is of distinct sessions, so refreshing a page does not inflate a step.
 - **Storage.** In memory by default (nothing to set up, but it resets on restart and is per server). Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to use Redis, where sessions go into HyperLogLogs: they can count different sessions but cannot give the ids back. Data expires after 90 days.
 - **Accessible and light.** A server-rendered page with no client JavaScript. Every number is written beside its bar, and the funnel is also available as a table. It is hidden from search engines; it holds no personal data, so it is not behind a login.
+
+## A/B test: tariff cards or a comparison table
+
+Half of visitors see the tariffs as cards, half as a comparison table. Which gets more people to choose a tariff?
+
+- **Assigned before the page renders** in [`proxy.ts`](proxy.ts), and remembered in a cookie that holds only the layout name. `/tariffs` is quietly rewritten to one of two prebuilt pages, so there is no flicker or layout shift.
+- **Measured** with the existing anonymous funnel, and **read** on `/funnel` with a two-proportion z-test, a planned sample size, and a verdict that will not name a winner too early.
+- **Switched off** with `TARIFF_LAYOUT_EXPERIMENT=off`.
+
+See [ADR 3](docs/decisions/0003-tariff-layout-ab-test.md) for the hypothesis, decision rule and what building it taught us (a wide table on a phone needs care).
 
 ## Load test
 
@@ -137,3 +148,5 @@ Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine
 - [x] Performance budgets (Lighthouse CI) and monitoring (Sentry, Speed Insights, anonymous funnel events)
 - [x] Load test (k6) and write-up
 - [x] Funnel dashboard at `/funnel`
+- [x] A/B test of the tariff layout, with results on `/funnel`
+- [ ] Storybook for the form kit

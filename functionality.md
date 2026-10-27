@@ -66,6 +66,13 @@ Switchboard is an **independent concept**: a four-step electricity quote journey
 - If prices cannot be fetched: a focused "Prices are not available" message with **Try again**.
 - If one tariff cannot be priced: the others are still shown, with a note naming the missing one and **Try again**.
 
+### A/B test on step 3
+
+- Half of visitors see the tariffs as **cards**, half as a **comparison table**, chosen at random the first time and kept for 30 days.
+- The table has the same tariffs, facts and wording as the cards. It has a caption and row and column headers, and on phones it scrolls sideways inside a labelled box that keyboard users can reach, with the tariff name held in place and a hint to scroll.
+- The address stays `/tariffs` either way. `/tariffs/cards` and `/tariffs/table` can be opened directly to check a layout.
+- Results are on the funnel dashboard.
+
 ### Step 4: sign up (`/signup`), demo
 
 - Shows the tariff you chose and its estimated cost.
@@ -90,6 +97,7 @@ Switchboard is an **independent concept**: a four-step electricity quote journey
 - How people gave their usage (bill or estimate) and which tariffs they chose.
 - Periods: today, last 7 days, last 30 days. Also available as a table.
 - Counts are distinct anonymous sessions. Stored in memory, or in Redis when configured.
+- **Experiment: tariff layout:** each layout's sessions, choices and choose rate, with a plain-English verdict (not enough data, no clear difference, or which layout is ahead and how sure we can be), and the planned number of sessions.
 - Hidden from search engines. Server-rendered with no client JavaScript.
 
 ### Other pages
@@ -114,6 +122,7 @@ Built to WCAG 2.2 AA and checked automatically by axe on every journey page, plu
 ## Saving your progress
 
 - Kept in your browser (`localStorage`): region, usage answers, yearly kWh, chosen tariff and the demo reference.
+- A cookie, `sb-tariff-layout`, holding only `cards` or `table` for the A/B test. It identifies nobody.
 - **Never kept:** names, emails, addresses or full postcodes.
 - Anything unexpected in storage is ignored. If storage is blocked, the journey still works.
 

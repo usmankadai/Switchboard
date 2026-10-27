@@ -9,6 +9,7 @@ import {
   describeTerm,
 } from "@/lib/comparison";
 import { formatStandingCharge, formatUnitRate } from "@/lib/money";
+import { CHEAPEST_LABEL, KIND_DESCRIPTIONS, REQUIREMENTS } from "./tariffCopy";
 import styles from "./tariffs.module.css";
 
 export const TariffCardFragment = graphql(`
@@ -28,23 +29,6 @@ export const TariffCardFragment = graphql(`
   }
 `);
 
-/** One line on what each kind of tariff means, without jargon. */
-const KIND_DESCRIPTIONS = {
-  FLEXIBLE: "A variable price that can go up or down, usually every 3 months.",
-  FIXED: "Your unit rate and standing charge stay the same for the whole contract.",
-  TRACKER: "The price changes each day, following wholesale energy costs.",
-  AGILE: "The price changes every half hour. It is cheapest when demand is low, sometimes below zero.",
-} as const;
-
-/**
- * What a customer needs before they can choose a tariff. Agile bills every
- * half hour, so it needs a smart meter that sends half-hourly readings
- * (Octopus's Agile help page and terms).
- */
-const REQUIREMENTS: Partial<Record<keyof typeof KIND_DESCRIPTIONS, string>> = {
-  AGILE: "Needs a smart meter that sends half-hourly readings.",
-};
-
 type TariffCardProps = {
   quote: FragmentType<typeof TariffCardFragment>;
   isCheapest: boolean;
@@ -60,7 +44,7 @@ export function TariffCard({ quote: quoteRef, isCheapest, onChoose }: TariffCard
     <li className={styles.card} aria-labelledby={headingId}>
       {isCheapest ? (
         // Text, not just colour, so the label is not lost on anyone.
-        <p className={styles.badge}>Lowest estimated cost</p>
+        <p className={styles.badge}>{CHEAPEST_LABEL}</p>
       ) : null}
       <h2 id={headingId} className={styles.cardHeading}>
         {quote.displayName}
