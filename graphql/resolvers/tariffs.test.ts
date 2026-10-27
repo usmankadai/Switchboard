@@ -68,8 +68,8 @@ function fakeEnergy(): EnergyDataSource {
 }
 
 const COMPARISON = /* GraphQL */ `
-  query Comparison($postcode: String!, $annualKwh: Int!) {
-    tariffComparison(postcode: $postcode, annualKwh: $annualKwh) {
+  query Comparison($regionCode: ID!, $annualKwh: Int!) {
+    tariffComparison(regionCode: $regionCode, annualKwh: $annualKwh) {
       region { code name }
       annualKwh
       pricesCheckedAt
@@ -91,9 +91,15 @@ const COMPARISON = /* GraphQL */ `
 let energy: EnergyDataSource;
 const server = new ApolloServer<GraphQLContext>({ typeDefs, resolvers });
 
-async function run(variables: Record<string, unknown>) {
+const REGION = /* GraphQL */ `
+  query Region($postcode: String!) {
+    region(postcode: $postcode) { code name }
+  }
+`;
+
+async function run(variables: Record<string, unknown>, query = COMPARISON) {
   const response = await server.executeOperation(
-    { query: COMPARISON, variables },
+    { query, variables },
     { contextValue: { dataSources: { energy }, now } },
   );
   if (response.body.kind !== "single") throw new Error("Expected a single result");
@@ -106,7 +112,7 @@ beforeEach(() => {
 
 describe("tariffComparison", () => {
   it("combines region, products and prices into one response", async () => {
-    const result = await run({ postcode: "sw1a1aa", annualKwh: 2700 });
+    const result = await run({ regionCode: "c", annualKwh: 2700 });
 
     expect(result.errors).toBeUndefined();
     const comparison = (result.data as { tariffComparison: Record<string, unknown> })
@@ -141,7 +147,7 @@ describe("tariffComparison", () => {
   });
 
   it("asks for 30 whole days of Agile prices, so the cache key is stable", async () => {
-    await run({ postcode: "SW1A 1AA", annualKwh: 2700 });
+    await run({ regionCode: "C", annualKwh: 2700 });
     expect(energy.getUnitRates).toHaveBeenCalledWith(
       "AGILE-24-10-01",
       "E-1R-AGILE-24-10-01-C",
@@ -153,32 +159,24 @@ describe("tariffComparison", () => {
     vi.mocked(energy.getUnitRates).mockImplementation(async (code) =>
       code.startsWith("OE-FIX") ? [] : [openRate(25)],
     );
-    const result = await run({ postcode: "SW1A 1AA", annualKwh: 2700 });
+    const result = await run({ regionCode: "C", annualKwh: 2700 });
     const kinds = (
       result.data as { tariffComparison: { quotes: { kind: string }[] } }
     ).tariffComparison.quotes.map((quote) => quote.kind);
     expect(kinds).not.toContain("FIXED");
   });
 
-  it("rejects a badly formatted postcode without calling any API", async () => {
-    const result = await run({ postcode: "not a postcode", annualKwh: 2700 });
+  it("rejects an unknown region code", async () => {
+    const result = await run({ regionCode: "Z", annualKwh: 2700 });
     expect(result.errors?.[0]?.extensions).toMatchObject({
       code: "BAD_USER_INPUT",
-      field: "postcode",
+      field: "regionCode",
     });
-    expect(energy.postcodeExists).not.toHaveBeenCalled();
-  });
-
-  it("reports a postcode that does not exist", async () => {
-    vi.mocked(energy.postcodeExists).mockResolvedValue(false);
-    const result = await run({ postcode: "ZZ1 1ZZ", annualKwh: 2700 });
-    expect(result.errors?.[0]?.extensions).toMatchObject({
-      code: "POSTCODE_NOT_FOUND",
-    });
+    expect(energy.listProducts).not.toHaveBeenCalled();
   });
 
   it.each([0, -5, 50_001])("rejects annual usage of %d kWh", async (annualKwh) => {
-    const result = await run({ postcode: "SW1A 1AA", annualKwh });
+    const result = await run({ regionCode: "C", annualKwh });
     expect(result.errors?.[0]?.extensions).toMatchObject({
       code: "BAD_USER_INPUT",
       field: "annualKwh",
@@ -189,7 +187,7 @@ describe("tariffComparison", () => {
     vi.mocked(energy.listProducts).mockRejectedValue(
       new UpstreamError("Octopus returned 503", "octopus"),
     );
-    const result = await run({ postcode: "SW1A 1AA", annualKwh: 2700 });
+    const result = await run({ regionCode: "C", annualKwh: 2700 });
     expect(result.errors?.[0]).toMatchObject({
       message: "We could not get prices right now. Please try again in a moment.",
       extensions: { code: "UPSTREAM_UNAVAILABLE" },
@@ -198,9 +196,45 @@ describe("tariffComparison", () => {
 
   it("says so when no tariff can be priced", async () => {
     vi.mocked(energy.getRegionalTariff).mockResolvedValue(null);
-    const result = await run({ postcode: "SW1A 1AA", annualKwh: 2700 });
+    const result = await run({ regionCode: "C", annualKwh: 2700 });
     expect(result.errors?.[0]?.extensions).toMatchObject({
       code: "NO_TARIFFS_AVAILABLE",
+    });
+  });
+});
+
+describe("region", () => {
+  it("returns the region for a postcode in any format", async () => {
+    const result = await run({ postcode: "sw1a1aa" }, REGION);
+    expect(result.data).toEqual({ region: { code: "C", name: "London" } });
+    expect(energy.lookupRegion).toHaveBeenCalledWith("SW1A 1AA");
+  });
+
+  it("rejects a badly formatted postcode without calling any API", async () => {
+    const result = await run({ postcode: "not a postcode" }, REGION);
+    expect(result.errors?.[0]?.extensions).toMatchObject({
+      code: "BAD_USER_INPUT",
+      field: "postcode",
+    });
+    expect(energy.postcodeExists).not.toHaveBeenCalled();
+  });
+
+  it("reports a postcode that does not exist", async () => {
+    vi.mocked(energy.postcodeExists).mockResolvedValue(false);
+    const result = await run({ postcode: "ZZ1 1ZZ" }, REGION);
+    expect(result.errors?.[0]?.extensions).toMatchObject({
+      code: "POSTCODE_NOT_FOUND",
+      field: "postcode",
+    });
+  });
+
+  it("turns an upstream failure into a friendly, retryable error", async () => {
+    vi.mocked(energy.lookupRegion).mockRejectedValue(
+      new UpstreamError("Octopus returned 503", "octopus"),
+    );
+    const result = await run({ postcode: "SW1A 1AA" }, REGION);
+    expect(result.errors?.[0]?.extensions).toMatchObject({
+      code: "UPSTREAM_UNAVAILABLE",
     });
   });
 });

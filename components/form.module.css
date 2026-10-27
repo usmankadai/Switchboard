@@ -1,0 +1,159 @@
+/* Shared styles for the accessible form kit. */
+
+.heading {
+  margin-bottom: var(--space-3);
+}
+
+.heading:focus {
+  outline: none;
+}
+
+.heading:focus-visible {
+  outline: 3px solid var(--colour-focus);
+  outline-offset: 4px;
+  box-shadow: none;
+}
+
+.caption {
+  margin-bottom: var(--space-2);
+  color: var(--colour-text-muted);
+  font-size: 1.125rem;
+}
+
+.field {
+  margin-bottom: var(--space-4);
+}
+
+.fieldError {
+  padding-left: var(--space-3);
+  border-left: 5px solid var(--colour-error);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-weight: 700;
+}
+
+/* A label that is also the page heading takes the h1's size. */
+.labelHeading {
+  display: block;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.hint {
+  margin-bottom: var(--space-2);
+  color: var(--colour-text-muted);
+}
+
+.errorMessage {
+  margin-bottom: var(--space-2);
+  color: var(--colour-error);
+  font-weight: 700;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-1) var(--space-2);
+  border: 2px solid var(--colour-text);
+  border-radius: 0;
+  background: var(--colour-surface);
+  color: var(--colour-text);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 3px solid var(--colour-focus);
+  outline-offset: 0;
+  box-shadow: inset 0 0 0 2px var(--colour-text);
+}
+
+.fieldError .input {
+  border-color: var(--colour-error);
+}
+
+.button {
+  display: inline-block;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 3px 0 var(--colour-text);
+  background: var(--colour-brand);
+  color: var(--colour-brand-text);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: #083a36;
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--colour-focus);
+  outline-offset: 0;
+  background: var(--colour-focus);
+  color: var(--colour-focus-text);
+  box-shadow: 0 3px 0 var(--colour-text);
+}
+
+.button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--colour-text);
+}
+
+.button[aria-disabled="true"] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.errorSummary {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 5px solid var(--colour-error);
+  background: var(--colour-surface);
+}
+
+.errorSummary:focus {
+  outline: 3px solid var(--colour-focus);
+  outline-offset: 0;
+  box-shadow: none;
+}
+
+.errorSummaryTitle {
+  font-size: 1.375rem;
+  margin-bottom: var(--space-2);
+}
+
+.errorSummaryList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.errorSummaryList a {
+  color: var(--colour-error);
+  font-weight: 700;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  font-size: 1rem;
+}
+
+.panel {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border-left: 4px solid var(--colour-accent);
+  background: var(--colour-surface);
+}
+
+.panel p:last-child {
+  margin-bottom: 0;
+}

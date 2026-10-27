@@ -19,7 +19,7 @@ Browser ──► Next.js pages (Server Components first)
               │
               ▼
           /api/graphql  (Apollo Server, backend for frontend)
-              │   tariffComparison(postcode, annualKwh)
+              │   region(postcode), tariffComparison(regionCode, annualKwh)
               ▼
           datasources  ('use cache' + cacheLife)
               │
@@ -33,7 +33,7 @@ Try it locally:
 
 ```bash
 curl -s localhost:3000/api/graphql -H 'content-type: application/json' \
-  -d '{"query":"{ tariffComparison(postcode: \"SW1A 1AA\", annualKwh: 2700) { region { name } quotes { kind unitRatePence estimatedAnnualCostPence } } }"}'
+  -d '{"query":"{ tariffComparison(regionCode: \"C\", annualKwh: 2700) { region { name } quotes { kind unitRatePence estimatedAnnualCostPence } } }"}'
 ```
 
 ## Getting started
@@ -68,6 +68,7 @@ pnpm dev
 - [x] GraphQL layer with live, cached tariff comparison
 - [x] Pricing logic with unit tests; resolver tests with a fake datasource
 - [x] App shell with skip link, independence notice and axe checks
-- [ ] Postcode, usage and tariff steps
+- [x] Postcode step: region lookup, GOV.UK style errors, save and resume
+- [ ] Usage and tariff steps
 - [ ] Signup with save and resume, and confirmation
 - [ ] Monitoring, performance budgets and load test write-up

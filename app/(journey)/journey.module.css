@@ -1,0 +1,8 @@
+.journey {
+  padding-top: var(--space-5);
+}
+
+/* Keep forms to a readable width, like a single column on GOV.UK. */
+.journey > * {
+  max-width: var(--measure);
+}

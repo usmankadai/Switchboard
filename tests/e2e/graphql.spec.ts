@@ -26,7 +26,7 @@ test.describe("GraphQL endpoint", () => {
   test("rejects impossible usage before fetching prices", async ({ request }) => {
     const response = await request.post("/api/graphql", {
       data: {
-        query: `query { tariffComparison(postcode: "SW1A 1AA", annualKwh: 0) { annualKwh } }`,
+        query: `query { tariffComparison(regionCode: "C", annualKwh: 0) { annualKwh } }`,
       },
     });
 

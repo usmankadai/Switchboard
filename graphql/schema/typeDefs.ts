@@ -4,10 +4,12 @@ export const typeDefs = /* GraphQL */ `
     region(postcode: String!): Region!
 
     """
-    Everything the tariff step needs in one request: region, the tariffs on
-    sale there, current prices and an estimated annual cost for the given usage.
+    Everything the tariff step needs in one request: the tariffs on sale in a
+    region, current prices and an estimated annual cost for the given usage.
+    Takes a region code (from the region query) rather than a postcode, so the
+    journey never has to keep the customer's full postcode.
     """
-    tariffComparison(postcode: String!, annualKwh: Int!): TariffComparison!
+    tariffComparison(regionCode: ID!, annualKwh: Int!): TariffComparison!
   }
 
   type Region {

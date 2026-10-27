@@ -8,7 +8,7 @@ The tariff comparison screen needs data from at least six REST calls to the Octo
 
 ## Decision
 
-Add a GraphQL layer (Apollo Server in a Next.js route handler) that exposes queries shaped for the UI, such as `tariffComparison(postcode, annualKwh)`. Datasource functions cache upstream calls with `'use cache'`. Resolvers combine data and call pure functions in `/lib` for the maths.
+Add a GraphQL layer (Apollo Server in a Next.js route handler) that exposes queries shaped for the UI, such as `tariffComparison(regionCode, annualKwh)`. Datasource functions cache upstream calls with `'use cache'`. Resolvers combine data and call pure functions in `/lib` for the maths.
 
 ## Consequences
 

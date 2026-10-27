@@ -5,3 +5,6 @@ import { afterEach } from "vitest";
 afterEach(() => {
   cleanup();
 });
+
+// jsdom does not implement layout, so scrolling is a no-op in tests.
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};

@@ -27,8 +27,10 @@ export type Query = {
   /** Look up the electricity region for a UK postcode. */
   region: Region;
   /**
-   * Everything the tariff step needs in one request: region, the tariffs on
-   * sale there, current prices and an estimated annual cost for the given usage.
+   * Everything the tariff step needs in one request: the tariffs on sale in a
+   * region, current prices and an estimated annual cost for the given usage.
+   * Takes a region code (from the region query) rather than a postcode, so the
+   * journey never has to keep the customer's full postcode.
    */
   tariffComparison: TariffComparison;
 };
@@ -41,7 +43,7 @@ export type QueryRegionArgs = {
 
 export type QueryTariffComparisonArgs = {
   annualKwh: Scalars['Int']['input'];
-  postcode: Scalars['String']['input'];
+  regionCode: Scalars['ID']['input'];
 };
 
 export type Region = {
@@ -203,7 +205,7 @@ export type PriceSummaryResolvers<ContextType = GraphQLContext, ParentType exten
 
 export type QueryResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   region?: Resolver<ResolversTypes['Region'], ParentType, ContextType, RequireFields<QueryRegionArgs, 'postcode'>>;
-  tariffComparison?: Resolver<ResolversTypes['TariffComparison'], ParentType, ContextType, RequireFields<QueryTariffComparisonArgs, 'annualKwh' | 'postcode'>>;
+  tariffComparison?: Resolver<ResolversTypes['TariffComparison'], ParentType, ContextType, RequireFields<QueryTariffComparisonArgs, 'annualKwh' | 'regionCode'>>;
 };
 
 export type RegionResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Region'] = ResolversParentTypes['Region']> = {

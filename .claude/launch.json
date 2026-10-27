@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "switchboard",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "start", "--port", "3125"],
+      "port": 3125
+    }
+  ]
+}

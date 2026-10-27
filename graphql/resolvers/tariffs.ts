@@ -151,7 +151,17 @@ async function buildQuote(
 export const tariffQueries: QueryResolvers<GraphQLContext> = {
   region: (_parent, { postcode }, context) => resolveRegion(postcode, context),
 
-  tariffComparison: async (_parent, { postcode, annualKwh }, context) => {
+  tariffComparison: async (_parent, { regionCode, annualKwh }, context) => {
+    const code = regionCode.toUpperCase();
+    const regionName = REGION_NAMES[code];
+    if (!regionName) {
+      throw userError(
+        "That region code is not recognised",
+        ErrorCode.BadUserInput,
+        "regionCode",
+      );
+    }
+
     if (!Number.isInteger(annualKwh) || annualKwh < 1 || annualKwh > MAX_ANNUAL_KWH) {
       throw userError(
         `Enter your yearly usage as a whole number of kWh, from 1 to ${MAX_ANNUAL_KWH.toLocaleString("en-GB")}`,
@@ -160,7 +170,7 @@ export const tariffQueries: QueryResolvers<GraphQLContext> = {
       );
     }
 
-    const region = await resolveRegion(postcode, context);
+    const region: Region = { code, name: regionName };
 
     const quotes = await upstream(async () => {
       const products = selectComparisonProducts(

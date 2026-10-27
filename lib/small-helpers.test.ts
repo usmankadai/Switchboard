@@ -6,7 +6,7 @@ import {
   formatWholePounds,
   toWholePence,
 } from "./money";
-import { normalisePostcode } from "./postcode";
+import { checkPostcodeInput, normalisePostcode } from "./postcode";
 import { electricityTariffCode, parseRegionCode } from "./regions";
 import { estimateAnnualKwh } from "./usage";
 
@@ -93,5 +93,22 @@ describe("estimateAnnualKwh", () => {
     };
     expect(() => estimateAnnualKwh({ ...answers, occupants: 0 })).toThrow();
     expect(() => estimateAnnualKwh({ ...answers, occupants: 2.5 })).toThrow();
+  });
+});
+
+describe("checkPostcodeInput", () => {
+  it("asks for a postcode when the box is empty or only spaces", () => {
+    expect(checkPostcodeInput("   ")).toEqual({ ok: false, message: "Enter your postcode" });
+  });
+
+  it("explains the format when it is wrong", () => {
+    expect(checkPostcodeInput("SW1")).toEqual({
+      ok: false,
+      message: "Enter a full UK postcode, like SW1A 1AA",
+    });
+  });
+
+  it("returns the tidied postcode when it looks right", () => {
+    expect(checkPostcodeInput(" sw1a1aa")).toEqual({ ok: true, postcode: "SW1A 1AA" });
   });
 });

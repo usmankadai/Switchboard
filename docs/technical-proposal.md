@@ -34,7 +34,7 @@ It is an independent concept using the public Octopus Energy API. It is not affi
 | Next.js route handlers returning JSON | One call per screen; server caching | Each screen needs its own bespoke endpoint and types |
 | **GraphQL backend for frontend (chosen)** | One query shaped for the UI; typed end to end with codegen; server caching in one place; the same pattern as a real onboarding stack | More moving parts; must earn its place by aggregating, not mirroring |
 
-The comparison needs a region lookup, the product list, product details per tariff, unit rates, standing charges and 30 days of half-hourly Agile prices. `tariffComparison(postcode, annualKwh)` returns all of it, already priced, in one request. Resolvers combine data; they do not mirror REST endpoints one to one.
+The comparison needs a region lookup, the product list, product details per tariff, unit rates, standing charges and 30 days of half-hourly Agile prices. `tariffComparison(regionCode, annualKwh)` returns all of it, already priced, in one request. Resolvers combine data; they do not mirror REST endpoints one to one.
 
 ### Caching: where and how long
 

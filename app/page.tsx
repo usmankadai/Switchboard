@@ -1,3 +1,5 @@
+import Link from "next/link";
+import formStyles from "@/components/form.module.css";
 import { IndependenceNotice } from "@/components/IndependenceNotice";
 import styles from "./page.module.css";
 
@@ -28,6 +30,11 @@ export default function HomePage() {
         <p className={styles.lead}>
           Compare electricity tariffs with real, up to date prices, in plain
           English, without the jargon.
+        </p>
+        <p>
+          <Link href="/postcode" className={formStyles.button}>
+            Start now
+          </Link>
         </p>
         <IndependenceNotice className={styles.notice} />
       </section>

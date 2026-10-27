@@ -83,7 +83,7 @@ Client operations and fragments are written with the codegen `graphql()` functio
 
 ### Why a GraphQL layer
 
-The REST API needs several calls to build one comparison screen (region lookup, product list, product detail, unit rates, standing charges, and 30 days of Agile prices). The GraphQL layer is a backend-for-frontend that aggregates these into a single query shaped for the UI: `tariffComparison(postcode, annualKwh)`. Keep that justification true: resolvers should combine and shape data, not just mirror REST endpoints one to one.
+The REST API needs several calls to build one comparison screen (region lookup, product list, product detail, unit rates, standing charges, and 30 days of Agile prices). The GraphQL layer is a backend-for-frontend that aggregates these into a single query shaped for the UI: `tariffComparison(regionCode, annualKwh)`. It takes a region code, not a postcode: the postcode step resolves the region once with `region(postcode)`, so later steps never need the full postcode. Keep that justification true: resolvers should combine and shape data, not just mirror REST endpoints one to one.
 
 ### Data source
 
@@ -131,7 +131,8 @@ Target WCAG 2.2 AA on every page.
 - Semantic HTML first. Use native `<button>`, `<input>`, `<fieldset>` and `<legend>` before reaching for ARIA.
 - Every input has a visible `<label>`. Placeholders are never the only label.
 - Forms use an error summary at the top on submit (GOV.UK pattern), linked to each invalid field, plus inline errors announced to screen readers.
-- On each step change, move focus to the step heading and update the page `<title>`.
+- On each step change, move focus to the step heading and update the page `<title>`. Use `StepHeading` for the h1 and call `markStepNavigation()` right before `router.push` to the next step. Prefix the title with "Error: " while a form shows errors.
+- Reuse the form kit in `/components` (`TextInput`, `ErrorSummary`, `Button`, `StepHeading`) rather than writing new inputs.
 - Full keyboard support, visible focus styles, and no keyboard traps.
 - Colour contrast at least 4.5:1 for text. Never use colour alone to convey meaning, including in charts.
 - Charts (such as Agile prices) include a text summary and an accessible data table alternative.
