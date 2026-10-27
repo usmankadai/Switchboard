@@ -1,4 +1,5 @@
 import { REGION_NAMES } from "./regions";
+import { sanitiseSavedUsage, type SavedUsage } from "./usage-form";
 
 /**
  * Save and resume for the quote journey.
@@ -14,6 +15,8 @@ export type SavedJourney = {
   /** Region letter, for example "C". */
   regionCode?: string;
   annualKwh?: number;
+  /** How the usage figure was worked out, so the form can be refilled. */
+  usage?: SavedUsage;
   /** The chosen tariff's id from the comparison. */
   tariffId?: string;
 };
@@ -47,6 +50,8 @@ export function sanitiseJourney(value: unknown): SavedJourney {
   ) {
     journey.annualKwh = raw.annualKwh;
   }
+  const usage = sanitiseSavedUsage(raw.usage);
+  if (usage) journey.usage = usage;
   if (typeof raw.tariffId === "string" && raw.tariffId.length <= 64) {
     journey.tariffId = raw.tariffId;
   }

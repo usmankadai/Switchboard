@@ -104,6 +104,7 @@ The REST API needs several calls to build one comparison screen (region lookup, 
 - Handle upstream failures gracefully: serve cached data when available, otherwise show a clear, accessible error with a retry.
 - **Lab budgets (Lighthouse CI):** LCP under 2.5s, CLS under 0.1, TBT under 200ms on the journey pages. Lighthouse cannot measure INP, because there is no real interaction in a lab run; TBT is the lab proxy.
 - **Field data:** measure real INP (under 200ms), LCP and CLS with Vercel Speed Insights or the `web-vitals` library.
+- **Pages stay alive after navigation.** With Cache Components, Next.js keeps up to 3 recent routes mounted but hidden (React `<Activity>`), with their state and DOM. So: ids must be unique across pages (use `useId` for shared components); reset transient state such as busy flags in a `useLayoutEffect` cleanup; and in Playwright, scope text queries to visible elements because hidden steps are still in the DOM. Read `node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`.
 - Keep client JavaScript lean. Prefer Server Components; use Client Components only where interactivity is needed.
 
 ## Coding conventions

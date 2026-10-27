@@ -99,6 +99,21 @@ test.describe("postcode step", () => {
     await expect(page.getByRole("link", { name: "Continue with London" })).toBeVisible();
   });
 
+  test("shows a working button after going back from the next step", async ({ page }) => {
+    await mockGraphQL(page, london);
+    await page.goto("/postcode");
+    await postcodeInput(page).fill("SW1A 1AA");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page).toHaveURL(/\/usage$/);
+
+    // A client-side Back, so Next.js restores the preserved page.
+    await page.getByRole("link", { name: "Back" }).click();
+    await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue" })).not.toHaveAttribute(
+      "aria-disabled",
+    );
+  });
+
   test("explains when a postcode does not exist", async ({ page }) => {
     await mockGraphQL(page, notFound);
     await page.goto("/postcode");

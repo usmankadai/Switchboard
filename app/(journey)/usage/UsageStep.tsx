@@ -1,19 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ErrorSummary, type FormError } from "@/components/ErrorSummary";
 import formStyles from "@/components/form.module.css";
 import { StepHeading } from "@/components/StepHeading";
 import { useSavedJourney } from "@/components/useSavedJourney";
 import { REGION_NAMES } from "@/lib/regions";
+import { formValuesFromSaved } from "@/lib/usage-form";
 import { stepCaption } from "../steps";
+import { UsageForm } from "./UsageForm";
+
+const PAGE_TITLE = "Your usage | Switchboard";
 
 /**
- * Placeholder for the usage step. It confirms the region saved by the
- * postcode step so the journey can be followed end to end while the usage
- * questions are built.
+ * Step 2. The heading and error summary live here, above the form, so the
+ * page order matches GOV.UK: back link, error summary, caption, heading.
  */
 export function UsageStep() {
   const journey = useSavedJourney();
+  const [errors, setErrors] = useState<FormError[]>([]);
+  const [submitCount, setSubmitCount] = useState(0);
+
+  useEffect(() => {
+    document.title = errors.length > 0 ? `Error: ${PAGE_TITLE}` : PAGE_TITLE;
+  }, [errors]);
+
   const regionName = journey?.regionCode
     ? REGION_NAMES[journey.regionCode]
     : undefined;
@@ -23,18 +35,30 @@ export function UsageStep() {
       <Link href="/postcode" className={formStyles.backLink}>
         Back
       </Link>
+      <ErrorSummary errors={errors} submitCount={submitCount} />
       <p className={formStyles.caption}>{stepCaption("/usage")}</p>
       <StepHeading>How much electricity do you use?</StepHeading>
 
+      {/* Nothing until storage has been read, to avoid a flash of the wrong state. */}
       {journey === null ? null : regionName ? (
-        <div className={formStyles.panel}>
+        <>
           <p>
             Your region: <strong>{regionName}</strong>.{" "}
             <Link href="/postcode">
-              Change<span className="visually-hidden"> your postcode</span>
+              Change{" "}
+              <span className="visually-hidden">your postcode</span>
             </Link>
           </p>
-        </div>
+          <UsageForm
+            initialValues={formValuesFromSaved(journey.usage, journey.annualKwh)}
+            onInvalid={(next) => {
+              setErrors(next);
+              setSubmitCount((count) => count + 1);
+            }}
+            onClearErrors={() => setErrors([])}
+            errors={errors}
+          />
+        </>
       ) : (
         <div className={formStyles.panel}>
           <p>
@@ -43,8 +67,6 @@ export function UsageStep() {
           </p>
         </div>
       )}
-
-      <p>The usage questions are coming next.</p>
     </>
   );
 }

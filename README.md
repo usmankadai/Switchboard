@@ -69,6 +69,7 @@ pnpm dev
 - [x] Pricing logic with unit tests; resolver tests with a fake datasource
 - [x] App shell with skip link, independence notice and axe checks
 - [x] Postcode step: region lookup, GOV.UK style errors, save and resume
-- [ ] Usage and tariff steps
+- [x] Usage step: figure from a bill or a three-question estimate, refilled on return
+- [ ] Tariff comparison step
 - [ ] Signup with save and resume, and confirmation
 - [ ] Monitoring, performance budgets and load test write-up

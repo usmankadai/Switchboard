@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useEffect, useId, useRef, type MouseEvent } from "react";
 import styles from "./form.module.css";
 
 export type FormError = {
@@ -25,6 +25,9 @@ export function ErrorSummary({
   submitCount: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Unique per instance: Next.js keeps recent pages in the DOM (hidden), so a
+  // fixed id could clash with another step's summary.
+  const titleId = useId();
 
   useEffect(() => {
     if (errors.length > 0) ref.current?.focus();
@@ -46,10 +49,10 @@ export function ErrorSummary({
     <div
       ref={ref}
       className={styles.errorSummary}
-      aria-labelledby="error-summary-title"
+      aria-labelledby={titleId}
       tabIndex={-1}
     >
-      <h2 id="error-summary-title" className={styles.errorSummaryTitle}>
+      <h2 id={titleId} className={styles.errorSummaryTitle}>
         There is a problem
       </h2>
       <ul className={styles.errorSummaryList}>

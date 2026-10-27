@@ -27,6 +27,18 @@ describe("journey storage", () => {
     expect(stored).not.toContain("@");
   });
 
+  it("keeps usage answers so the form can be refilled", () => {
+    const usage = {
+      method: "estimate" as const,
+      homeSize: "flat" as const,
+      occupants: 1,
+      hasElectricVehicle: false,
+      hasHeatPump: false,
+    };
+    saveJourney({ annualKwh: 1500, usage });
+    expect(loadJourney()).toEqual({ annualKwh: 1500, usage });
+  });
+
   it("ignores corrupt or tampered data", () => {
     window.localStorage.setItem(JOURNEY_STORAGE_KEY, "{not json");
     expect(loadJourney()).toEqual({});

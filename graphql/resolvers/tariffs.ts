@@ -12,6 +12,7 @@ import {
 } from "@/lib/products";
 import { selectCurrentRate, type RateRecord } from "@/lib/rates";
 import { REGION_NAMES } from "@/lib/regions";
+import { MAX_ANNUAL_KWH } from "@/lib/usage";
 import { recentDaysWindow, todayWindow } from "@/lib/windows";
 import type { GraphQLContext } from "../context";
 import { UpstreamError } from "../datasources/types";
@@ -19,8 +20,6 @@ import { UpstreamError } from "../datasources/types";
 /** How much price history to average for tariffs whose price varies. */
 export const RECENT_PRICE_DAYS = 30;
 
-/** Sensible bounds for a home. Above this is almost certainly a typo. */
-export const MAX_ANNUAL_KWH = 50_000;
 
 export const ErrorCode = {
   BadUserInput: "BAD_USER_INPUT",

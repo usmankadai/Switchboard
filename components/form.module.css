@@ -157,3 +157,106 @@
 .panel p:last-child {
   margin-bottom: 0;
 }
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.choices {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* The whole row is a generous 44px+ target, not just the small input. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.choiceInput {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0.4rem 0 0;
+  accent-color: var(--colour-brand);
+  cursor: pointer;
+}
+
+.choiceInput:focus-visible {
+  outline: 3px solid var(--colour-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px var(--colour-text);
+}
+
+.choiceLabel {
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.choiceHint {
+  display: block;
+  color: var(--colour-text-muted);
+  font-size: 1rem;
+}
+
+/* Follow-up questions for the chosen answer, tied to it visually by the left border. */
+.conditional {
+  margin: var(--space-2) 0 var(--space-4) 0.8rem;
+  padding: var(--space-2) 0 var(--space-1) calc(var(--space-3) + 0.2rem);
+  border-left: 4px solid var(--colour-border);
+}
+
+.conditional > :last-child {
+  margin-bottom: 0;
+}
+
+.estimate {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius);
+}
+
+.estimate p {
+  margin: 0;
+}
+
+.estimateFigure {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.summaryList {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--colour-border);
+}
+
+.summaryRow dt {
+  flex: 1 1 10rem;
+  font-weight: 700;
+}
+
+.summaryRow dd {
+  flex: 2 1 12rem;
+  margin: 0;
+}

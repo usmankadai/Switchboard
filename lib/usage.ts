@@ -1,4 +1,5 @@
-export type HomeSize = "flat" | "small-house" | "medium-house" | "large-house";
+export const HOME_SIZES = ["flat", "small-house", "medium-house", "large-house"] as const;
+export type HomeSize = (typeof HOME_SIZES)[number];
 
 export type UsageAnswers = {
   homeSize: HomeSize;
@@ -27,6 +28,9 @@ const ELECTRIC_VEHICLE_KWH = 2000;
 /** A heat pump for an average home, replacing gas heating. */
 const HEAT_PUMP_KWH = 3500;
 
+/** Sensible upper bound for one home. Above this is almost certainly a typo. */
+export const MAX_ANNUAL_KWH = 50_000;
+
 export const MIN_OCCUPANTS = 1;
 export const MAX_OCCUPANTS = 8;
 
@@ -53,4 +57,11 @@ export function estimateAnnualKwh(answers: UsageAnswers): number {
 
   // Round to the nearest 10 so the figure does not look falsely precise.
   return Math.round(kwh / 10) * 10;
+}
+
+const kwhFormatter = new Intl.NumberFormat("en-GB");
+
+/** 2700 → "2,700 kWh" */
+export function formatKwh(kwh: number): string {
+  return `${kwhFormatter.format(kwh)} kWh`;
 }

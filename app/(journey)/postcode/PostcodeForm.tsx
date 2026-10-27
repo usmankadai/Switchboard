@@ -4,7 +4,7 @@ import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { useApolloClient } from "@apollo/client/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { ErrorSummary, type FormError } from "@/components/ErrorSummary";
 import formStyles from "@/components/form.module.css";
@@ -55,6 +55,10 @@ export function PostcodeForm() {
   const [errors, setErrors] = useState<FormError[]>([]);
   const [submitCount, setSubmitCount] = useState(0);
   const [busy, setBusy] = useState(false);
+
+  // Next.js keeps this page alive (hidden) after moving on. Reset the busy
+  // state when it is hidden, so going Back shows a working button.
+  useLayoutEffect(() => () => setBusy(false), []);
 
   // GOV.UK pattern: prefix the page title so screen reader users hear about
   // errors as soon as the page is announced.
@@ -108,8 +112,9 @@ export function PostcodeForm() {
       {savedRegion ? (
         <div className={formStyles.panel}>
           <p>
-            Welcome back. Last time you told us you are in {savedRegion}.{" "}
-            <Link href="/usage">Continue with {savedRegion}</Link>
+            We have your region as {savedRegion}.{" "}
+            <Link href="/usage">Continue with {savedRegion}</Link>, or enter a
+            different postcode below.
           </p>
         </div>
       ) : null}

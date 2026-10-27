@@ -8,7 +8,7 @@ import {
 } from "./money";
 import { checkPostcodeInput, normalisePostcode } from "./postcode";
 import { electricityTariffCode, parseRegionCode } from "./regions";
-import { estimateAnnualKwh } from "./usage";
+import { estimateAnnualKwh, formatKwh } from "./usage";
 
 describe("money", () => {
   it("formats whole pence as pounds", () => {
@@ -110,5 +110,12 @@ describe("checkPostcodeInput", () => {
 
   it("returns the tidied postcode when it looks right", () => {
     expect(checkPostcodeInput(" sw1a1aa")).toEqual({ ok: true, postcode: "SW1A 1AA" });
+  });
+});
+
+describe("formatKwh", () => {
+  it("groups thousands", () => {
+    expect(formatKwh(2700)).toBe("2,700 kWh");
+    expect(formatKwh(950)).toBe("950 kWh");
   });
 });
