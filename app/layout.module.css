@@ -1,0 +1,46 @@
+.skipLink {
+  position: absolute;
+  left: var(--space-3);
+  top: -10rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--colour-focus);
+  color: var(--colour-focus-text);
+  font-weight: 700;
+  z-index: 10;
+}
+
+.skipLink:focus {
+  top: var(--space-2);
+}
+
+.header {
+  background: var(--colour-brand);
+  color: var(--colour-brand-text);
+  padding: var(--space-3) 0;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: inherit;
+  font-size: 1.375rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wordmarkTag {
+  font-size: 0.875rem;
+  font-weight: 400;
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+}
+
+.footer {
+  margin-top: var(--space-6);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--colour-border);
+  color: var(--colour-text-muted);
+  font-size: 1rem;
+}
