@@ -6,6 +6,7 @@ import { GraphQLError } from "graphql";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadJourney, saveJourney } from "@/lib/journey-storage";
 import { TariffsStep } from "./TariffsStep";
+import { agileByTimeOfDay } from "../../../tests/e2e/graphqlMock";
 import { COMPARISON_UNAVAILABLE, TariffComparisonQuery } from "./useTariffComparison";
 
 const push = vi.fn();
@@ -67,6 +68,7 @@ const comparison: MockLink.MockedResponse = {
               minPence: -7.34,
               maxPence: 67.053,
               days: 30,
+              byTimeOfDay: agileByTimeOfDay,
             },
           }),
         ],

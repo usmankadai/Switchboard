@@ -1,4 +1,5 @@
 import { toWholePence } from "./money";
+import { averageByTimeOfDay, type TimeOfDayPrice } from "./time-of-day";
 import { DOMESTIC_PROFILE, londonSlotIndex } from "./usage-profile";
 
 export const DAYS_PER_YEAR = 365;
@@ -57,6 +58,8 @@ export type PriceSummary = {
   maxPence: number;
   /** How many distinct UK days the prices cover. */
   days: number;
+  /** Average price for each half hour of the day, for the time-of-day chart. */
+  byTimeOfDay: TimeOfDayPrice[];
 };
 
 /** Plain min, max and usage-weighted average for the "is Agile right for you?" explainer. */
@@ -80,5 +83,6 @@ export function summarisePrices(
     minPence: Math.min(...values),
     maxPence: Math.max(...values),
     days,
+    byTimeOfDay: averageByTimeOfDay(prices),
   };
 }

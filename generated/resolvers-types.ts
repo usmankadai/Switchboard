@@ -34,6 +34,8 @@ export type PriceSummary = {
   __typename?: 'PriceSummary';
   /** Usage-weighted average, pence per kWh. */
   averagePence: Scalars['Float']['output'];
+  /** Average price for each half hour of the day across those days, in UK time. */
+  byTimeOfDay: Array<TimeOfDayPrice>;
   /** Number of days the prices cover. */
   days: Scalars['Int']['output'];
   maxPence: Scalars['Float']['output'];
@@ -42,7 +44,10 @@ export type PriceSummary = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Look up the electricity region for a UK postcode. Regions almost never change. */
+  /**
+   * Look up the electricity region for a UK postcode. Deliberately no cache
+   * hint: it is sent as POST so the postcode never appears in a URL.
+   */
   region: Region;
   /**
    * Everything the tariff step needs in one request: the tariffs on sale in a
@@ -135,6 +140,14 @@ export type TariffQuote = {
   unitRatePence: Scalars['Float']['output'];
 };
 
+export type TimeOfDayPrice = {
+  __typename?: 'TimeOfDayPrice';
+  /** Average price in that half hour, pence per kWh inc VAT. */
+  averagePence: Scalars['Float']['output'];
+  /** Half-hour slot of the day in UK time: 0 is 00:00 to 00:30, 47 is 23:30 to midnight. */
+  slot: Scalars['Int']['output'];
+};
+
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -223,6 +236,7 @@ export type ResolversTypes = {
   TariffComparison: ResolverTypeWrapper<TariffComparison>;
   TariffKind: TariffKind;
   TariffQuote: ResolverTypeWrapper<TariffQuote>;
+  TimeOfDayPrice: ResolverTypeWrapper<TimeOfDayPrice>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -240,6 +254,7 @@ export type ResolversParentTypes = {
   String: Scalars['String']['output'];
   TariffComparison: TariffComparison;
   TariffQuote: TariffQuote;
+  TimeOfDayPrice: TimeOfDayPrice;
 };
 
 export type CacheControlDirectiveArgs = {
@@ -256,6 +271,7 @@ export type MutationResolvers<ContextType = GraphQLContext, ParentType extends R
 
 export type PriceSummaryResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['PriceSummary'] = ResolversParentTypes['PriceSummary']> = {
   averagePence?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  byTimeOfDay?: Resolver<Array<ResolversTypes['TimeOfDayPrice']>, ParentType, ContextType>;
   days?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   maxPence?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   minPence?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
@@ -298,6 +314,11 @@ export type TariffQuoteResolvers<ContextType = GraphQLContext, ParentType extend
   unitRatePence?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
+export type TimeOfDayPriceResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['TimeOfDayPrice'] = ResolversParentTypes['TimeOfDayPrice']> = {
+  averagePence?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  slot?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = GraphQLContext> = {
   Mutation?: MutationResolvers<ContextType>;
   PriceSummary?: PriceSummaryResolvers<ContextType>;
@@ -306,6 +327,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   StartSwitchResult?: StartSwitchResultResolvers<ContextType>;
   TariffComparison?: TariffComparisonResolvers<ContextType>;
   TariffQuote?: TariffQuoteResolvers<ContextType>;
+  TimeOfDayPrice?: TimeOfDayPriceResolvers<ContextType>;
 };
 
 export type DirectiveResolvers<ContextType = GraphQLContext> = {

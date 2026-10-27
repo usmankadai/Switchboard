@@ -113,5 +113,14 @@ export const typeDefs = /* GraphQL */ `
     maxPence: Float!
     "Number of days the prices cover."
     days: Int!
+    "Average price for each half hour of the day across those days, in UK time."
+    byTimeOfDay: [TimeOfDayPrice!]!
+  }
+
+  type TimeOfDayPrice @cacheControl(inheritMaxAge: true) {
+    "Half-hour slot of the day in UK time: 0 is 00:00 to 00:30, 47 is 23:30 to midnight."
+    slot: Int!
+    "Average price in that half hour, pence per kWh inc VAT."
+    averagePence: Float!
   }
 `;

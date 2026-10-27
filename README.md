@@ -106,6 +106,7 @@ Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine
 
 ## Decisions worth knowing
 
+- **The Agile chart** shows the average price for each half hour of the day over the last 30 days, in UK time, with the cheapest and dearest 3-hour windows labelled in words. It is hand-drawn SVG (no chart library, so no extra bundle weight), named by its title and a plain-English summary for screen readers, with every value in a table. Hover tooltips add detail but never hold information that is not also in the table.
 - **Estimates for Agile and Tracker** use the last 30 days of prices, weighted by a typical household's daily usage pattern in UK time. They are always labelled as estimates.
 - **Money:** rates stay as fractional pence; totals are rounded to whole pence once, at the end.
 - **Scope:** electricity only, single-rate meters, Direct Debit prices inc VAT. Gas would follow the same datasource and resolver pattern.
@@ -122,7 +123,7 @@ Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine
 - [x] Postcode step: region lookup, GOV.UK style errors, save and resume
 - [x] Usage step: figure from a bill or a three-question estimate, refilled on return
 - [x] Tariff comparison: live prices, cheapest label, Agile explainer, retry on outage
-- [ ] Agile price chart with a data table alternative
+- [x] Agile price chart by time of day, with a text summary and a data table
 - [x] Signup: demo address finder with region check, startSwitch mutation, confirmation
 - [x] Caching and resilience: shared server cache, CDN caching, timeouts and retries, partial results
 - [x] Performance budgets (Lighthouse CI) and monitoring (Sentry, Speed Insights, anonymous funnel events)

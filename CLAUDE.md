@@ -141,7 +141,7 @@ Target WCAG 2.2 AA on every page.
 - Reuse the form kit in `/components` (`TextInput`, `ErrorSummary`, `Button`, `StepHeading`) rather than writing new inputs.
 - Full keyboard support, visible focus styles, and no keyboard traps.
 - Colour contrast at least 4.5:1 for text. Never use colour alone to convey meaning, including in charts.
-- Charts (such as Agile prices) include a text summary and an accessible data table alternative.
+- Charts (such as Agile prices) include a text summary and an accessible data table alternative. The pattern is `AgilePriceChart`: `<svg role="img">` named by its visible title and summary, a table in a `<details>`, labels on highlighted areas (never colour alone), hover tooltips that only repeat what the table shows, and drawing at the container's real width so text is not scaled down on phones. Build charts as plain SVG rather than adding a chart library (the 250 KB script budget).
 - Respect `prefers-reduced-motion`.
 - Every Playwright journey test runs an axe scan; a new violation fails the build.
 

@@ -84,7 +84,7 @@ const COMPARISON = /* GraphQL */ `
         standingChargePencePerDay
         estimatedAnnualCostPence
         priceVaries
-        recentPrices { averagePence days }
+        recentPrices { averagePence days byTimeOfDay { slot averagePence } }
       }
     }
   }
@@ -147,7 +147,11 @@ describe("tariffComparison", () => {
         // Averaging adds floating point noise; it is rounded once in the total.
         unitRatePence: expect.closeTo(20, 10),
         priceVaries: true,
-        recentPrices: { averagePence: expect.closeTo(20, 10), days: 30 },
+        recentPrices: {
+          averagePence: expect.closeTo(20, 10),
+          days: 30,
+          byTimeOfDay: expect.arrayContaining([{ slot: 34, averagePence: 20 }]),
+        },
       },
     ]);
   });

@@ -42,6 +42,17 @@ export const errorReply = (message: string, code: string, field?: string) => ({
   errors: [{ message, extensions: { code, ...(field ? { field } : {}) } }],
 });
 
+/**
+ * A typical Agile shape: cheap overnight, a midday dip, an evening peak.
+ * Shared with the component tests so both see the same chart.
+ */
+export const agileByTimeOfDay = Array.from({ length: 48 }, (_, slot) => {
+  const hour = slot / 2;
+  const averagePence =
+    hour >= 16 && hour < 19 ? 44 + (slot % 3) : hour < 5 ? 12 + (slot % 4) : hour >= 12 && hour < 15 ? 18 : 26;
+  return { __typename: "TimeOfDayPrice", slot, averagePence };
+});
+
 const quote = (overrides: Record<string, unknown>) => ({
   __typename: "TariffQuote",
   termMonths: null,
@@ -92,6 +103,7 @@ export const comparisonReply = {
             minPence: -7.34,
             maxPence: 67.053,
             days: 30,
+            byTimeOfDay: agileByTimeOfDay,
           },
         }),
       ],

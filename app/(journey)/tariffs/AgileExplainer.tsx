@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { graphql, useFragment, type FragmentType } from "@/generated";
 import { formatUnitRate } from "@/lib/money";
+import { AgilePriceChart } from "./AgilePriceChart";
 import styles from "./tariffs.module.css";
 
 export const AgileExplainerFragment = graphql(`
@@ -13,13 +14,17 @@ export const AgileExplainerFragment = graphql(`
       minPence
       maxPence
       days
+      byTimeOfDay {
+        slot
+        averagePence
+      }
     }
   }
 `);
 
 /**
- * "Is Agile right for you?" in plain English, using the real price range.
- * A price chart with a table alternative is planned to sit alongside this.
+ * "Is Agile right for you?" in plain English, using the real price range,
+ * with a time-of-day chart (plus a text summary and a table alternative).
  */
 export function AgileExplainer({
   quote: quoteRef,
@@ -46,6 +51,8 @@ export function AgileExplainer({
           paid to use electricity.
         </p>
       ) : null}
+
+      <AgilePriceChart byTimeOfDay={prices.byTimeOfDay} days={prices.days} />
 
       <h3>It could suit you if you can</h3>
       <ul>
