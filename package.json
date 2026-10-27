@@ -11,13 +11,17 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lhci": "lhci autorun --config=lighthouserc.cjs"
   },
   "dependencies": {
+    "@apollo/cache-control-types": "^1.0.3",
     "@apollo/client": "^4.3.5",
     "@apollo/client-integration-nextjs": "^0.14.5",
     "@apollo/server": "^5.5.1",
     "@as-integrations/next": "^4.1.0",
+    "@sentry/nextjs": "^11.9.0",
+    "@vercel/speed-insights": "^2.0.0",
     "graphql": "^16.14.2",
     "next": "16.4.3",
     "react": "19.3.0",
@@ -31,6 +35,7 @@
     "@graphql-codegen/typescript": "^6.1.2",
     "@graphql-codegen/typescript-resolvers": "^6.1.1",
     "@graphql-typed-document-node/core": "^3.2.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.64.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

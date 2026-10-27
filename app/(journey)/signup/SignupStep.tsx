@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ErrorSummary, type FormError } from "@/components/ErrorSummary";
 import formStyles from "@/components/form.module.css";
 import { StepHeading } from "@/components/StepHeading";
+import { useFunnelStep } from "@/components/useFunnelStep";
 import { useSavedJourney } from "@/components/useSavedJourney";
 import { describeCost } from "@/lib/comparison";
 import { REGION_NAMES } from "@/lib/regions";
@@ -17,6 +18,7 @@ const PAGE_TITLE = "Sign up | Switchboard";
 /** Step 4. Heading and error summary sit above the form, as on the other steps. */
 export function SignupStep() {
   const journey = useSavedJourney();
+  useFunnelStep("signup");
   // Reads from Apollo's cache after the comparison, so no extra request.
   const { data } = useTariffComparison(journey);
   const [errors, setErrors] = useState<FormError[]>([]);

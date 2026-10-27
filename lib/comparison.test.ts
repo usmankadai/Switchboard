@@ -4,6 +4,7 @@ import {
   describeCheckedAt,
   describeCost,
   describeExitFee,
+  describeKinds,
   describeTerm,
   monthlyPence,
 } from "./comparison";
@@ -71,5 +72,13 @@ describe("describeCheckedAt", () => {
     expect(describeCheckedAt("2026-07-01T13:05:00Z")).toBe(
       "Prices checked at 14:05 on 1 July 2026",
     );
+  });
+});
+
+describe("describeKinds", () => {
+  it("joins tariff types in plain English", () => {
+    expect(describeKinds(["AGILE"])).toBe("Agile");
+    expect(describeKinds(["FIXED", "AGILE"])).toBe("Fixed and Agile");
+    expect(describeKinds(["FLEXIBLE", "FIXED", "AGILE"])).toBe("Flexible, Fixed and Agile");
   });
 });

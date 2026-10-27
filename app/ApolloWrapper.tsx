@@ -32,7 +32,15 @@ function makeClient() {
         Region: { keyFields: ["code"] },
       },
     }),
-    link: new HttpLink({ uri: graphqlUri() }),
+    link: new HttpLink({
+      uri: graphqlUri(),
+      // Requests are POST by default. Queries whose variables are not
+      // personal opt into GET per operation, so the CDN can cache them (see
+      // useTariffComparison). Never GET a query with a postcode or other
+      // personal data: URLs end up in CDN and server logs.
+      // This header satisfies Apollo Server's CSRF protection for GET.
+      headers: { "apollo-require-preflight": "true" },
+    }),
   });
 }
 

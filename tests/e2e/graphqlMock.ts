@@ -12,13 +12,19 @@ export async function mockGraphQL(page: Page, replies: Record<string, Reply | Re
     Object.entries(replies).map(([name, reply]) => [name, Array.isArray(reply) ? [...reply] : [reply]]),
   );
 
-  await page.route("**/api/graphql", async (route) => {
-    const body = route.request().postDataJSON() as { operationName?: string } | null;
-    const queue = body?.operationName ? queues.get(body.operationName) : undefined;
+  // Match on the path, so GET requests (with a query string) are caught too.
+  await page.route((url) => url.pathname === "/api/graphql", async (route) => {
+    // Queries arrive as GET (operation name in the query string), mutations as POST.
+    const request = route.request();
+    const operationName =
+      request.method() === "GET"
+        ? new URL(request.url()).searchParams.get("operationName")
+        : (request.postDataJSON() as { operationName?: string } | null)?.operationName;
+    const queue = operationName ? queues.get(operationName) : undefined;
     if (!queue) {
       await route.fulfill({
         status: 500,
-        json: { errors: [{ message: `No mock for ${body?.operationName ?? "unknown operation"}` }] },
+        json: { errors: [{ message: `No mock for ${operationName ?? "unknown operation"}` }] },
       });
       return;
     }
@@ -51,6 +57,7 @@ export const comparisonReply = {
     tariffComparison: {
       __typename: "TariffComparison",
       pricesCheckedAt: "2026-10-27T12:00:00.000Z",
+      unavailableKinds: [],
       quotes: [
         quote({
           id: "E-1R-VAR-22-11-01-C",

@@ -32,7 +32,8 @@ It is a portfolio project built to demonstrate the skills of a Frontend Engineer
 - GraphQL Code Generator for typed operations, hooks and resolver types
 - React Testing Library with Vitest for unit and component tests
 - Playwright for end-to-end tests, with `@axe-core/playwright` for accessibility checks
-- Planned: Sentry (errors), Vercel Speed Insights (field Core Web Vitals), Lighthouse CI (lab budgets), k6 (load test)
+- Sentry (errors, off unless `NEXT_PUBLIC_SENTRY_DSN` is set), Vercel Speed Insights (field Core Web Vitals), Lighthouse CI (lab budgets)
+- Planned: k6 (load test)
 
 Package manager: pnpm. `graphql` is pinned to v16 because Apollo's packages do not yet support v17.
 
@@ -48,9 +49,10 @@ pnpm codegen          # regenerate GraphQL types and hooks
 pnpm test             # Vitest + RTL (single run)
 pnpm test:watch       # Vitest in watch mode
 pnpm test:e2e         # Playwright (includes axe checks)
+pnpm lhci             # Lighthouse CI budgets (run after pnpm build)
 ```
 
-Added later, as the matching priority is reached: `pnpm lhci` (Lighthouse CI) and `pnpm load` (k6).
+Added later: `pnpm load` (k6).
 
 Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test`. For changes to the journey, also run `pnpm test:e2e`.
 
@@ -97,12 +99,14 @@ The REST API needs several calls to build one comparison screen (region lookup, 
 
 ### Caching and performance
 
-- Cache Components is on, so cache with `'use cache'` plus an explicit `cacheLife` profile in the datasource functions. Do not use the old `export const revalidate` route config.
+- Cache Components is on. Datasource functions use `'use cache: remote'` plus an explicit `cacheLife` profile: plain `'use cache'` is per-instance memory, which barely survives on serverless hosting. Do not use the old `export const revalidate` route config. See ADR 2.
+- Upstream calls go through `graphql/datasources/http.ts`: 6s timeout, one retry for temporary failures, and error messages that name the endpoint, never the URL (URLs can contain postcodes).
 - Product list, product detail and region lookups change rarely: `cacheLife('days')` or longer.
 - Unit rates, standing charges and Agile prices: `cacheLife('hours')`. Agile prices for the next day are published each afternoon.
 - Keep cache keys stable: round time windows (such as "the last 30 days") to whole days before passing them to a cached function.
+- **CDN caching:** queries are POST by default. A query may opt into GET (via `context: { fetchOptions: { method: "GET" } }`) only if none of its variables are personal, because URLs land in CDN and server logs. `tariffComparison` does this; `region(postcode)` must not. Cache lifetimes come from `@cacheControl` hints in the schema, and the route handler turns them into `CDN-Cache-Control`. Errors and partial results are always `no-store`.
 - Handle upstream failures gracefully: serve cached data when available, otherwise show a clear, accessible error with a retry.
-- **Lab budgets (Lighthouse CI):** LCP under 2.5s, CLS under 0.1, TBT under 200ms on the journey pages. Lighthouse cannot measure INP, because there is no real interaction in a lab run; TBT is the lab proxy.
+- **Lab budgets (Lighthouse CI, `lighthouserc.cjs`):** median of 5 runs per page, with real (devtools) mobile throttling: LCP under 2.5s, CLS under 0.1, TBT under 200ms, compressed JavaScript under 250 KB, accessibility score 100. Lighthouse cannot measure INP, because there is no real interaction in a lab run; TBT is the lab proxy.
 - **Field data:** measure real INP (under 200ms), LCP and CLS with Vercel Speed Insights or the `web-vitals` library.
 - **Pages stay alive after navigation.** With Cache Components, Next.js keeps up to 3 recent routes mounted but hidden (React `<Activity>`), with their state and DOM. So: ids must be unique across pages (use `useId` for shared components); reset transient state such as busy flags in a `useLayoutEffect` cleanup; and in Playwright, scope text queries to visible elements because hidden steps are still in the DOM. Read `node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`.
 - Keep client JavaScript lean. Prefer Server Components; use Client Components only where interactivity is needed.
@@ -152,8 +156,8 @@ Target WCAG 2.2 AA on every page.
 ## Privacy, saving progress and monitoring
 
 - **Save and resume** stores only non-personal journey data in `localStorage`: postcode region code, usage answers, annual kWh, chosen tariff and the demo reference number. Never store names, emails, phone numbers, addresses or full postcodes there. Personal details live in component state for the current page only, and are cleared from state after a successful submit (Next.js keeps the hidden page alive). The `startSwitch` mutation checks them with the same `lib/signup-form.ts` rules as the form, then discards them: never store, log or echo them in errors.
-- Sentry captures client and server errors. Do not send personal data (names, emails, addresses, postcodes) to Sentry; scrub them in `beforeSend`.
-- Track journey funnel events (step viewed, step completed, step abandoned) with anonymous identifiers only.
+- Sentry captures client and server errors when `NEXT_PUBLIC_SENTRY_DSN` is set. Sentry 11 collects bodies, headers, query strings and GraphQL variables by default: keep every `dataCollection` category off (`lib/monitoring/sentryOptions.ts`), and keep the `lib/monitoring/scrub.ts` scrubber on every event and breadcrumb. In the browser, Sentry is only ever loaded with a dynamic import (`reportError`), never a static import, so visitors do not download it when it is off.
+- Funnel events (`lib/monitoring/funnel.ts`) are built only from allow-listed values with a random per-tab session id. Add new steps or details to the allow-lists; never send free text. "Abandoned" is derived from viewed but not completed.
 
 ## Scope and priorities
 

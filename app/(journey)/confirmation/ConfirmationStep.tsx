@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import formStyles from "@/components/form.module.css";
 import { StepHeading } from "@/components/StepHeading";
+import { useFunnelStep } from "@/components/useFunnelStep";
 import { useSavedJourney } from "@/components/useSavedJourney";
 import { describeCost } from "@/lib/comparison";
 import { clearJourney } from "@/lib/journey-storage";
@@ -13,6 +14,7 @@ import { useTariffComparison } from "../tariffs/useTariffComparison";
 export function ConfirmationStep() {
   const router = useRouter();
   const journey = useSavedJourney();
+  useFunnelStep("confirmation");
   const { data } = useTariffComparison(journey);
   const chosen = data?.tariffComparison.quotes.find((quote) => quote.id === journey?.tariffId);
 

@@ -73,6 +73,7 @@ const COMPARISON = /* GraphQL */ `
       region { code name }
       annualKwh
       pricesCheckedAt
+      unavailableKinds
       quotes {
         id
         kind
@@ -97,13 +98,17 @@ const REGION = /* GraphQL */ `
   }
 `;
 
-async function run(variables: Record<string, unknown>, query = COMPARISON) {
+async function execute(variables: Record<string, unknown>, query = COMPARISON) {
   const response = await server.executeOperation(
     { query, variables },
     { contextValue: { dataSources: { energy }, now } },
   );
   if (response.body.kind !== "single") throw new Error("Expected a single result");
-  return response.body.singleResult;
+  return { result: response.body.singleResult, cacheControl: response.http.headers.get("cache-control") };
+}
+
+async function run(variables: Record<string, unknown>, query = COMPARISON) {
+  return (await execute(variables, query)).result;
 }
 
 beforeEach(() => {
@@ -194,6 +199,30 @@ describe("tariffComparison", () => {
     });
   });
 
+  it("still shows the other tariffs when one fails upstream", async () => {
+    vi.mocked(energy.getUnitRates).mockImplementation(async (code) => {
+      if (code.startsWith("AGILE")) throw new UpstreamError("timed out", "octopus");
+      return [openRate(25)];
+    });
+    const result = await run({ regionCode: "C", annualKwh: 2700 });
+    expect(result.errors).toBeUndefined();
+    const comparison = (
+      result.data as {
+        tariffComparison: { quotes: { kind: string }[]; unavailableKinds: string[] };
+      }
+    ).tariffComparison;
+    expect(comparison.quotes.map((quote) => quote.kind)).toEqual(["FLEXIBLE", "FIXED"]);
+    expect(comparison.unavailableKinds).toEqual(["AGILE"]);
+  });
+
+  it("fails as a whole only when every tariff fails upstream", async () => {
+    vi.mocked(energy.getStandingCharges).mockRejectedValue(
+      new UpstreamError("Octopus returned 503", "octopus"),
+    );
+    const result = await run({ regionCode: "C", annualKwh: 2700 });
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+  });
+
   it("says so when no tariff can be priced", async () => {
     vi.mocked(energy.getRegionalTariff).mockResolvedValue(null);
     const result = await run({ regionCode: "C", annualKwh: 2700 });
@@ -236,5 +265,33 @@ describe("region", () => {
     expect(result.errors?.[0]?.extensions).toMatchObject({
       code: "UPSTREAM_UNAVAILABLE",
     });
+  });
+});
+
+describe("cache hints", () => {
+  it("lets a full comparison be cached for 5 minutes", async () => {
+    const { cacheControl } = await execute({ regionCode: "C", annualKwh: 2700 });
+    expect(cacheControl).toBe("max-age=300, public");
+  });
+
+  it("never marks a postcode lookup as cacheable", async () => {
+    const { cacheControl } = await execute({ postcode: "SW1A 1AA" }, REGION);
+    expect(cacheControl).toBe("no-store");
+  });
+
+  // Apollo marks anything uncacheable as no-store, so no CDN keeps it.
+  it("never caches a partial comparison", async () => {
+    vi.mocked(energy.getUnitRates).mockImplementation(async (code) => {
+      if (code.startsWith("AGILE")) throw new UpstreamError("timed out", "octopus");
+      return [openRate(25)];
+    });
+    const { cacheControl } = await execute({ regionCode: "C", annualKwh: 2700 });
+    expect(cacheControl).toBe("no-store");
+  });
+
+  it("never caches an error", async () => {
+    vi.mocked(energy.listProducts).mockRejectedValue(new UpstreamError("503", "octopus"));
+    const { cacheControl } = await execute({ regionCode: "C", annualKwh: 2700 });
+    expect(cacheControl).toBe("no-store");
   });
 });

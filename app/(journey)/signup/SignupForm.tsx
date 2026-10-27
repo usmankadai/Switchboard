@@ -14,6 +14,7 @@ import { TextInput } from "@/components/TextInput";
 import { graphql } from "@/generated";
 import { demoAddressesFor } from "@/lib/demo-addresses";
 import { saveJourney } from "@/lib/journey-storage";
+import { trackFunnel } from "@/lib/monitoring/funnel";
 import { checkPostcodeInput } from "@/lib/postcode";
 import { REGION_NAMES } from "@/lib/regions";
 import {
@@ -186,6 +187,7 @@ export function SignupForm({
       // Only the made-up reference is kept. Personal details are cleared
       // from memory too, as this page stays alive after moving on.
       saveJourney({ reference: data.startSwitch.reference });
+      trackFunnel("signup", "completed");
       setValues(EMPTY_SIGNUP_FORM);
       onErrorsChange([]);
       markStepNavigation();

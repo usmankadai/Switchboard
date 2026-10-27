@@ -7,9 +7,11 @@ import { Button } from "@/components/Button";
 import formStyles from "@/components/form.module.css";
 import { markStepNavigation } from "@/components/stepNavigation";
 import { StepHeading } from "@/components/StepHeading";
+import { useFunnelStep } from "@/components/useFunnelStep";
 import { useSavedJourney } from "@/components/useSavedJourney";
-import { cheapestQuoteId, describeCheckedAt } from "@/lib/comparison";
+import { cheapestQuoteId, describeCheckedAt, describeKinds } from "@/lib/comparison";
 import { saveJourney } from "@/lib/journey-storage";
+import { trackFunnel, type FunnelDetail } from "@/lib/monitoring/funnel";
 import { REGION_NAMES } from "@/lib/regions";
 import { formatKwh } from "@/lib/usage";
 import { stepCaption } from "../steps";
@@ -21,6 +23,7 @@ import { comparisonErrorMessage, useTariffComparison } from "./useTariffComparis
 export function TariffsStep() {
   const router = useRouter();
   const journey = useSavedJourney();
+  useFunnelStep("tariffs");
   const { data, error, loading, refetch } = useTariffComparison(journey);
   const problemRef = useRef<HTMLDivElement>(null);
   const problemHeadingId = useId();
@@ -37,6 +40,12 @@ export function TariffsStep() {
 
   function choose(tariffId: string) {
     saveJourney({ tariffId });
+    const kind = comparison?.quotes.find((quote) => quote.id === tariffId)?.kind;
+    trackFunnel(
+      "tariffs",
+      "completed",
+      kind ? (`tariff-${kind.toLowerCase()}` as FunnelDetail) : undefined,
+    );
     markStepNavigation();
     router.push("/signup");
   }
@@ -115,6 +124,20 @@ export function TariffsStep() {
                 Estimated yearly costs for {formatKwh(annualKwh)} a year in {regionName},
                 including VAT. They are estimates, not quotes.
               </p>
+              {comparison.unavailableKinds.length > 0 ? (
+                <div className={formStyles.panel}>
+                  <p>
+                    We could not get prices for {describeKinds(comparison.unavailableKinds)} just
+                    now. The others are below.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void refetch().catch(() => undefined)}
+                  >
+                    Try again
+                  </Button>
+                </div>
+              ) : null}
               <ul className={styles.cards} aria-label="Tariffs">
                 {comparison.quotes.map((quote) => (
                   <TariffCard

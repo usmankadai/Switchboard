@@ -1,7 +1,9 @@
+import { cacheControlFromInfo } from "@apollo/cache-control-types";
 import { GraphQLError } from "graphql";
 import type {
   QueryResolvers,
   Region,
+  TariffKind,
   TariffQuote,
 } from "@/generated/resolvers-types";
 import { estimateAnnualCostPence, summarisePrices } from "@/lib/estimate";
@@ -150,7 +152,7 @@ async function buildQuote(
 export const tariffQueries: QueryResolvers<GraphQLContext> = {
   region: (_parent, { postcode }, context) => resolveRegion(postcode, context),
 
-  tariffComparison: async (_parent, { regionCode, annualKwh }, context) => {
+  tariffComparison: async (_parent, { regionCode, annualKwh }, context, info) => {
     const code = regionCode.toUpperCase();
     const regionName = REGION_NAMES[code];
     if (!regionName) {
@@ -171,18 +173,40 @@ export const tariffQueries: QueryResolvers<GraphQLContext> = {
 
     const region: Region = { code, name: regionName };
 
-    const quotes = await upstream(async () => {
-      const products = selectComparisonProducts(
-        await context.dataSources.energy.listProducts(),
-        context.now,
-      );
-      const built = await Promise.all(
-        products.map((product) =>
-          buildQuote(product, region.code, annualKwh, context),
-        ),
-      );
-      return built.filter((quote): quote is TariffQuote => quote !== null);
+    // Without the product list there is nothing to compare, so that failure
+    // fails the whole query.
+    const products = await upstream(async () =>
+      selectComparisonProducts(await context.dataSources.energy.listProducts(), context.now),
+    );
+
+    // One tariff's prices failing should not hide the others. Settle each one
+    // separately and report which kinds are missing.
+    const settled = await Promise.allSettled(
+      products.map((product) => buildQuote(product, region.code, annualKwh, context)),
+    );
+
+    const quotes: TariffQuote[] = [];
+    const unavailableKinds: TariffKind[] = [];
+    settled.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        if (result.value) quotes.push(result.value);
+      } else if (result.reason instanceof UpstreamError) {
+        unavailableKinds.push(products[index]!.kind);
+      } else {
+        throw result.reason;
+      }
     });
+
+    // Never let a CDN keep a partial comparison: the next request should
+    // try the missing tariffs again.
+    if (unavailableKinds.length > 0) cacheControlFromInfo(info).setCacheHint({ maxAge: 0 });
+
+    if (quotes.length === 0 && unavailableKinds.length > 0) {
+      throw new GraphQLError(
+        "We could not get prices right now. Please try again in a moment.",
+        { extensions: { code: ErrorCode.Upstream } },
+      );
+    }
 
     if (quotes.length === 0) {
       throw new GraphQLError(
@@ -195,6 +219,7 @@ export const tariffQueries: QueryResolvers<GraphQLContext> = {
       region,
       annualKwh,
       quotes,
+      unavailableKinds,
       pricesCheckedAt: context.now.toISOString(),
     };
   },

@@ -10,9 +10,11 @@ import { ErrorSummary, type FormError } from "@/components/ErrorSummary";
 import formStyles from "@/components/form.module.css";
 import { markStepNavigation } from "@/components/stepNavigation";
 import { TextInput } from "@/components/TextInput";
+import { useFunnelStep } from "@/components/useFunnelStep";
 import { useSavedJourney } from "@/components/useSavedJourney";
 import { graphql } from "@/generated";
 import { saveJourney } from "@/lib/journey-storage";
+import { trackFunnel } from "@/lib/monitoring/funnel";
 import { checkPostcodeInput } from "@/lib/postcode";
 import { REGION_NAMES } from "@/lib/regions";
 import { stepCaption } from "../steps";
@@ -50,6 +52,7 @@ export function PostcodeForm() {
   const client = useApolloClient();
   const router = useRouter();
   const savedJourney = useSavedJourney();
+  useFunnelStep("postcode");
 
   const [value, setValue] = useState("");
   const [errors, setErrors] = useState<FormError[]>([]);
@@ -96,6 +99,7 @@ export function PostcodeForm() {
 
       // Only the region is kept. The postcode itself is never stored.
       saveJourney({ regionCode: data.region.code });
+      trackFunnel("postcode", "completed");
       setErrors([]);
       markStepNavigation();
       router.push("/usage");

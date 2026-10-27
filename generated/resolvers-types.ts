@@ -12,6 +12,10 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type CacheControlScope =
+  | 'PRIVATE'
+  | 'PUBLIC';
+
 export type Mutation = {
   __typename?: 'Mutation';
   /**
@@ -38,7 +42,7 @@ export type PriceSummary = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Look up the electricity region for a UK postcode. */
+  /** Look up the electricity region for a UK postcode. Regions almost never change. */
   region: Region;
   /**
    * Everything the tariff step needs in one request: the tariffs on sale in a
@@ -92,6 +96,11 @@ export type TariffComparison = {
   /** Ordered Flexible, Fixed, Tracker, Agile. Types not on sale are left out. */
   quotes: Array<TariffQuote>;
   region: Region;
+  /**
+   * Tariff types we could not price just now because an upstream service
+   * failed. The other quotes are still shown; the UI offers a retry.
+   */
+  unavailableKinds: Array<TariffKind>;
 };
 
 export type TariffKind =
@@ -200,6 +209,7 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  CacheControlScope: CacheControlScope;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -232,6 +242,14 @@ export type ResolversParentTypes = {
   TariffQuote: TariffQuote;
 };
 
+export type CacheControlDirectiveArgs = {
+  inheritMaxAge?: Maybe<Scalars['Boolean']['input']>;
+  maxAge?: Maybe<Scalars['Int']['input']>;
+  scope?: Maybe<CacheControlScope>;
+};
+
+export type CacheControlDirectiveResolver<Result, Parent, ContextType = GraphQLContext, Args = CacheControlDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
 export type MutationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   startSwitch?: Resolver<ResolversTypes['StartSwitchResult'], ParentType, ContextType, RequireFields<MutationStartSwitchArgs, 'input'>>;
 };
@@ -263,6 +281,7 @@ export type TariffComparisonResolvers<ContextType = GraphQLContext, ParentType e
   pricesCheckedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   quotes?: Resolver<Array<ResolversTypes['TariffQuote']>, ParentType, ContextType>;
   region?: Resolver<ResolversTypes['Region'], ParentType, ContextType>;
+  unavailableKinds?: Resolver<Array<ResolversTypes['TariffKind']>, ParentType, ContextType>;
 };
 
 export type TariffQuoteResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['TariffQuote'] = ResolversParentTypes['TariffQuote']> = {
@@ -289,3 +308,6 @@ export type Resolvers<ContextType = GraphQLContext> = {
   TariffQuote?: TariffQuoteResolvers<ContextType>;
 };
 
+export type DirectiveResolvers<ContextType = GraphQLContext> = {
+  cacheControl?: CacheControlDirectiveResolver<any, any, ContextType>;
+};

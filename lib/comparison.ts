@@ -61,3 +61,17 @@ export function describeCheckedAt(iso: string): string {
   );
   return `Prices checked at ${parts.hour}:${parts.minute} on ${parts.day} ${parts.month} ${parts.year}`;
 }
+
+const KIND_NAMES = {
+  FLEXIBLE: "Flexible",
+  FIXED: "Fixed",
+  TRACKER: "Tracker",
+  AGILE: "Agile",
+} as const;
+
+/** ["FIXED", "AGILE"] → "Fixed and Agile" */
+export function describeKinds(kinds: readonly (keyof typeof KIND_NAMES)[]): string {
+  const names = kinds.map((kind) => KIND_NAMES[kind]);
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}

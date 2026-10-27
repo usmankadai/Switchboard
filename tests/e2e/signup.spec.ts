@@ -100,7 +100,7 @@ test.describe("signup step", () => {
 
   test("stops a supply address outside the priced region", async ({ page }) => {
     await startOnSignup(page);
-    await page.unroute("**/api/graphql");
+    await page.unrouteAll();
     await mockGraphQL(page, {
       TariffComparison: comparisonReply,
       RegionLookup: regionReply("P", "North Scotland"),

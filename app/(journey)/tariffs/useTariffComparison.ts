@@ -9,6 +9,7 @@ export const TariffComparisonQuery = graphql(`
   query TariffComparison($regionCode: ID!, $annualKwh: Int!) {
     tariffComparison(regionCode: $regionCode, annualKwh: $annualKwh) {
       pricesCheckedAt
+      unavailableKinds
       quotes {
         id
         kind
@@ -46,6 +47,9 @@ export function useTariffComparison(journey: SavedJourney | null) {
   return useQuery(TariffComparisonQuery, {
     variables: { regionCode: regionCode ?? "", annualKwh: annualKwh ?? 0 },
     skip: !ready,
+    // GET so the CDN can cache it: the variables (region letter and kWh)
+    // are not personal, so they are safe in a URL.
+    context: { fetchOptions: { method: "GET" } },
     // Show "Checking prices" again while a retry is in flight.
     notifyOnNetworkStatusChange: true,
   });

@@ -10,6 +10,7 @@ import { Radios } from "@/components/Radios";
 import { markStepNavigation } from "@/components/stepNavigation";
 import { TextInput } from "@/components/TextInput";
 import { saveJourney } from "@/lib/journey-storage";
+import { trackFunnel } from "@/lib/monitoring/funnel";
 import type { HomeSize } from "@/lib/usage";
 import { formatKwh } from "@/lib/usage";
 import {
@@ -79,6 +80,7 @@ export function UsageForm({
     }
     onClearErrors();
     saveJourney({ annualKwh: result.annualKwh, usage: result.usage });
+    trackFunnel("usage", "completed", result.usage.method === "known" ? "usage-known" : "usage-estimate");
     markStepNavigation();
     router.push("/tariffs");
   }

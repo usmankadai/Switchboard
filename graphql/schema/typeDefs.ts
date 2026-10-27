@@ -1,6 +1,23 @@
 export const typeDefs = /* GraphQL */ `
+  # Cache hints for Apollo Server's cache control plugin, which turns them into
+  # a Cache-Control header on GET responses. The route handler adds a CDN
+  # header from it. Responses with errors are never given a cache header.
+  enum CacheControlScope {
+    PUBLIC
+    PRIVATE
+  }
+
+  directive @cacheControl(
+    maxAge: Int
+    scope: CacheControlScope
+    inheritMaxAge: Boolean
+  ) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
   type Query {
-    "Look up the electricity region for a UK postcode."
+    """
+    Look up the electricity region for a UK postcode. Deliberately no cache
+    hint: it is sent as POST so the postcode never appears in a URL.
+    """
     region(postcode: String!): Region!
 
     """
@@ -10,6 +27,7 @@ export const typeDefs = /* GraphQL */ `
     journey never has to keep the customer's full postcode.
     """
     tariffComparison(regionCode: ID!, annualKwh: Int!): TariffComparison!
+      @cacheControl(maxAge: 300)
   }
 
   type Mutation {
@@ -35,7 +53,7 @@ export const typeDefs = /* GraphQL */ `
     tariffId: ID!
   }
 
-  type Region {
+  type Region @cacheControl(inheritMaxAge: true) {
     "Region letter, for example C."
     code: ID!
     "Friendly name, for example London."
@@ -49,16 +67,21 @@ export const typeDefs = /* GraphQL */ `
     AGILE
   }
 
-  type TariffComparison {
+  type TariffComparison @cacheControl(inheritMaxAge: true) {
     region: Region!
     annualKwh: Int!
     "Ordered Flexible, Fixed, Tracker, Agile. Types not on sale are left out."
     quotes: [TariffQuote!]!
+    """
+    Tariff types we could not price just now because an upstream service
+    failed. The other quotes are still shown; the UI offers a retry.
+    """
+    unavailableKinds: [TariffKind!]!
     "When the prices were checked, as an ISO 8601 timestamp."
     pricesCheckedAt: String!
   }
 
-  type TariffQuote {
+  type TariffQuote @cacheControl(inheritMaxAge: true) {
     "The regional tariff code, for example E-1R-AGILE-24-10-01-C."
     id: ID!
     kind: TariffKind!
@@ -83,7 +106,7 @@ export const typeDefs = /* GraphQL */ `
     recentPrices: PriceSummary
   }
 
-  type PriceSummary {
+  type PriceSummary @cacheControl(inheritMaxAge: true) {
     "Usage-weighted average, pence per kWh."
     averagePence: Float!
     minPence: Float!

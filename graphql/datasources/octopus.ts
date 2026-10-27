@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { fetchJson } from "./http";
 import type { ProductSummary } from "@/lib/products";
 import type { RateRecord } from "@/lib/rates";
 import { electricityTariffCode, parseRegionCode } from "@/lib/regions";
@@ -13,10 +14,16 @@ import {
  * Clients for the public Octopus Energy API and postcodes.io. Neither needs
  * an API key.
  *
- * Caching: each function below uses 'use cache' with an explicit lifetime.
- * Arguments become part of the cache key, so callers pass whole-day windows
- * rather than "now". Errors are thrown, not cached, so a failed call is
- * retried on the next request while older cached entries keep serving.
+ * Caching: each function uses 'use cache: remote' with an explicit lifetime.
+ * Plain 'use cache' is in-memory per server instance, which on serverless
+ * hosting barely survives between requests, so a traffic spike would still
+ * reach the upstream API. The remote cache is shared by every instance (the
+ * platform provides it; locally it falls back to in-memory).
+ *
+ * Past `revalidate` but within `expire`, the old entry is served while a fresh
+ * one is fetched in the background, so a short upstream outage is invisible.
+ * Errors are thrown, not cached. Arguments are part of the cache key, so
+ * callers pass whole-day windows rather than "now". See ADR 2.
  */
 
 const OCTOPUS_API = "https://api.octopus.energy/v1";
@@ -24,19 +31,6 @@ const POSTCODES_API = "https://api.postcodes.io";
 
 /** The API allows up to 1,500 results per page; 30 days of Agile is 1,440. */
 const PAGE_SIZE = 1500;
-
-async function getJson(url: string, service: UpstreamError["service"]) {
-  let response: Response;
-  try {
-    response = await fetch(url, { headers: { Accept: "application/json" } });
-  } catch (cause) {
-    throw new UpstreamError(`Could not reach ${service}: ${String(cause)}`, service);
-  }
-  if (!response.ok) {
-    throw new UpstreamError(`${service} returned ${response.status} for ${url}`, service);
-  }
-  return (await response.json()) as unknown;
-}
 
 // Small runtime guards. The API is public and could change shape, so check
 // the fields we rely on rather than trusting a type assertion.
@@ -48,7 +42,7 @@ type Paged = { next: string | null; results: unknown[] };
 
 function asPaged(value: unknown): Paged {
   if (!isRecord(value) || !Array.isArray(value.results)) {
-    throw new UpstreamError("Unexpected list response", "octopus");
+    throw new UpstreamError("octopus returned an unexpected list response", "octopus");
   }
   return {
     next: typeof value.next === "string" ? value.next : null,
@@ -56,12 +50,12 @@ function asPaged(value: unknown): Paged {
   };
 }
 
-async function getAllPages(firstUrl: string): Promise<unknown[]> {
+async function getAllPages(firstUrl: string, endpoint: string): Promise<unknown[]> {
   const results: unknown[] = [];
   let url: string | null = firstUrl;
   // Guard against an endless loop if the API ever links to itself.
   for (let page = 0; url && page < 20; page++) {
-    const paged = asPaged(await getJson(url, "octopus"));
+    const paged = asPaged(await fetchJson(url, { service: "octopus", endpoint }));
     results.push(...paged.results);
     url = paged.next;
   }
@@ -115,24 +109,24 @@ function compactPostcode(postcode: string): string {
 }
 
 export async function postcodeExists(postcode: string): Promise<boolean> {
-  "use cache";
+  "use cache: remote";
   cacheLife("weeks");
 
-  const body = await getJson(
+  const body = await fetchJson(
     `${POSTCODES_API}/postcodes/${compactPostcode(postcode)}/validate`,
-    "postcodes.io",
+    { service: "postcodes.io", endpoint: "postcode validate" },
   );
   return isRecord(body) && body.result === true;
 }
 
 export async function lookupRegion(postcode: string): Promise<string | null> {
-  "use cache";
+  "use cache: remote";
   cacheLife("weeks");
 
   const paged = asPaged(
-    await getJson(
+    await fetchJson(
       `${OCTOPUS_API}/industry/grid-supply-points/?postcode=${compactPostcode(postcode)}`,
-      "octopus",
+      { service: "octopus", endpoint: "grid supply points" },
     ),
   );
   const first = paged.results[0];
@@ -142,11 +136,12 @@ export async function lookupRegion(postcode: string): Promise<string | null> {
 }
 
 export async function listProducts(): Promise<ProductSummary[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("days");
 
   const results = await getAllPages(
     `${OCTOPUS_API}/products/?brand=OCTOPUS_ENERGY&is_business=false&page_size=100`,
+    "products",
   );
   return results.map(toProductSummary);
 }
@@ -155,12 +150,12 @@ export async function getRegionalTariff(
   productCode: string,
   regionCode: string,
 ): Promise<RegionalTariff | null> {
-  "use cache";
+  "use cache: remote";
   cacheLife("days");
 
-  const product = await getJson(
+  const product = await fetchJson(
     `${OCTOPUS_API}/products/${encodeURIComponent(productCode)}/`,
-    "octopus",
+    { service: "octopus", endpoint: "product detail" },
   );
   if (!isRecord(product) || !isRecord(product.single_register_electricity_tariffs)) {
     return null;
@@ -207,12 +202,13 @@ export async function getUnitRates(
   tariffCode: string,
   window: DayWindow,
 ): Promise<RateRecord[]> {
-  "use cache";
+  "use cache: remote";
   // Agile prices for tomorrow land each afternoon, so refresh hourly.
   cacheLife("hours");
 
   const results = await getAllPages(
     ratesUrl(productCode, tariffCode, "standard-unit-rates", window),
+    "unit rates",
   );
   return results.map(toRateRecord);
 }
@@ -222,11 +218,12 @@ export async function getStandingCharges(
   tariffCode: string,
   window: DayWindow,
 ): Promise<RateRecord[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   const results = await getAllPages(
     ratesUrl(productCode, tariffCode, "standing-charges", window),
+    "standing charges",
   );
   return results.map(toRateRecord);
 }

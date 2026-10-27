@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ErrorSummary, type FormError } from "@/components/ErrorSummary";
 import formStyles from "@/components/form.module.css";
 import { StepHeading } from "@/components/StepHeading";
+import { useFunnelStep } from "@/components/useFunnelStep";
 import { useSavedJourney } from "@/components/useSavedJourney";
 import { REGION_NAMES } from "@/lib/regions";
 import { formValuesFromSaved } from "@/lib/usage-form";
@@ -19,6 +20,7 @@ const PAGE_TITLE = "Your usage | Switchboard";
  */
 export function UsageStep() {
   const journey = useSavedJourney();
+  useFunnelStep("usage");
   const [errors, setErrors] = useState<FormError[]>([]);
   const [submitCount, setSubmitCount] = useState(0);
 

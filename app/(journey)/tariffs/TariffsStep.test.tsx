@@ -32,6 +32,7 @@ const comparison: MockLink.MockedResponse = {
       tariffComparison: {
         __typename: "TariffComparison",
         pricesCheckedAt: "2026-10-27T12:00:00.000Z",
+        unavailableKinds: [],
         quotes: [
           quote({
             id: "E-1R-VAR-22-11-01-C",
@@ -175,6 +176,23 @@ describe("TariffsStep", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("list", { name: "Tariffs" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Prices are not available" })).toBeNull();
+  });
+
+  it("shows the tariffs that worked and says which could not be priced", async () => {
+    const data = structuredClone(comparison.result) as {
+      data: { tariffComparison: { quotes: { kind: string }[]; unavailableKinds: string[] } };
+    };
+    data.data.tariffComparison.quotes = data.data.tariffComparison.quotes.filter(
+      (quote) => quote.kind !== "AGILE",
+    );
+    data.data.tariffComparison.unavailableKinds = ["AGILE"];
+    renderStep([{ request, result: data }]);
+
+    expect(
+      await screen.findByText(/We could not get prices for Agile just now/),
+    ).toBeInTheDocument();
+    expect(cards()).toHaveLength(2);
+    expect(screen.queryByRole("region", { name: /Is Agile/ })).toBeNull();
   });
 
   it("passes on the server's message when no tariffs can be shown", async () => {

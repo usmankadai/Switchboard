@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { IndependenceNotice } from "@/components/IndependenceNotice";
-import { ApolloWrapper } from "./ApolloWrapper";
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -36,13 +36,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         <main id="main-content" tabIndex={-1}>
-          <ApolloWrapper>{children}</ApolloWrapper>
+          {children}
         </main>
         <footer className={styles.footer}>
           <div className="container">
             <IndependenceNotice />
           </div>
         </footer>
+        {/* Real-user Core Web Vitals, including INP, which lab tools cannot measure. */}
+        <SpeedInsights />
       </body>
     </html>
   );
