@@ -71,6 +71,14 @@ Lighthouse CI, median of 5 runs, mobile with slow 4G and a 4x CPU slowdown appli
 
 Budgets: LCP 2.5s, TBT 200ms, CLS 0.1, JavaScript 250 KB, accessibility 100. All pages score 100 for accessibility. See [ADR 2](docs/decisions/0002-caching-resilience-and-performance-budgets.md) for why throttling is applied rather than simulated.
 
+## Funnel dashboard
+
+[`/funnel`](app/funnel/page.tsx) shows how many people reach each step of the journey and where they leave: conversion from start to finish, sessions at each step with the share that continued, the biggest drop-off, how people gave their usage and which tariffs they chose. Periods: today, last 7 days, last 30 days.
+
+- **Anonymous by design.** Events are built only from allow-listed values with a random per-tab session id. Every count is of distinct sessions, so refreshing a page does not inflate a step.
+- **Storage.** In memory by default (nothing to set up, but it resets on restart and is per server). Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to use Redis, where sessions go into HyperLogLogs: they can count different sessions but cannot give the ids back. Data expires after 90 days.
+- **Accessible and light.** A server-rendered page with no client JavaScript. Every number is written beside its bar, and the funnel is also available as a table. It is hidden from search engines; it holds no personal data, so it is not behind a login.
+
 ## Load test
 
 The question was not "how many requests can it take?" but **"does the caching strategy protect the upstream API during a spike?"** The Octopus API is a free public service we do not own, so if traffic reached it in proportion to our visitors, a price-change-day spike would hurt both of us.
@@ -128,4 +136,4 @@ Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine
 - [x] Caching and resilience: shared server cache, CDN caching, timeouts and retries, partial results
 - [x] Performance budgets (Lighthouse CI) and monitoring (Sentry, Speed Insights, anonymous funnel events)
 - [x] Load test (k6) and write-up
-- [ ] Funnel dashboard from the event logs
+- [x] Funnel dashboard at `/funnel`

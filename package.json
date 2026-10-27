@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "codegen": "graphql-codegen --config codegen.ts",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -27,7 +27,8 @@
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

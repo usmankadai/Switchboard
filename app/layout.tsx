@@ -43,8 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <IndependenceNotice />
           </div>
         </footer>
-        {/* Real-user Core Web Vitals, including INP, which lab tools cannot measure. */}
-        <SpeedInsights />
+        {/* Real-user Core Web Vitals, including INP, which lab tools cannot
+            measure. Only on Vercel, where its script is served. */}
+        {process.env.NEXT_PUBLIC_VERCEL_ENV ? <SpeedInsights /> : null}
       </body>
     </html>
   );

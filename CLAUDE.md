@@ -66,6 +66,8 @@ Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test
     /signup
     /confirmation
   /api/graphql/route.ts # Apollo Server handler
+  /api/events/route.ts  # anonymous funnel events
+  /funnel               # funnel dashboard (server-rendered, no client JS)
 /graphql
   /schema               # SDL type definitions (in .ts files with a /* GraphQL */ tag)
   /resolvers            # resolvers, one file per domain
@@ -75,7 +77,7 @@ Before considering any task done, run: `pnpm lint && pnpm typecheck && pnpm test
 /lib                    # pure logic: cost estimation, usage models, rate selection, formatting
 /generated              # codegen output, never edit by hand
 /tests/e2e              # Playwright specs
-/load-tests             # k6 scripts (later)
+/load-tests             # k6 scripts
 /docs
   technical-proposal.md # problem, options, decision, risks
   decisions/            # short ADRs for notable choices
@@ -158,7 +160,7 @@ Target WCAG 2.2 AA on every page.
 
 - **Save and resume** stores only non-personal journey data in `localStorage`: postcode region code, usage answers, annual kWh, chosen tariff and the demo reference number. Never store names, emails, phone numbers, addresses or full postcodes there. Personal details live in component state for the current page only, and are cleared from state after a successful submit (Next.js keeps the hidden page alive). The `startSwitch` mutation checks them with the same `lib/signup-form.ts` rules as the form, then discards them: never store, log or echo them in errors.
 - Sentry captures client and server errors when `NEXT_PUBLIC_SENTRY_DSN` is set. Sentry 11 collects bodies, headers, query strings and GraphQL variables by default: keep every `dataCollection` category off (`lib/monitoring/sentryOptions.ts`), and keep the `lib/monitoring/scrub.ts` scrubber on every event and breadcrumb. In the browser, Sentry is only ever loaded with a dynamic import (`reportError`), never a static import, so visitors do not download it when it is off.
-- Funnel events (`lib/monitoring/funnel.ts`) are built only from allow-listed values with a random per-tab session id. Add new steps or details to the allow-lists; never send free text. "Abandoned" is derived from viewed but not completed.
+- Funnel events (`lib/monitoring/funnel.ts`) are built only from allow-listed values with a random per-tab session id. Add new steps or details to the allow-lists; never send free text. "Abandoned" is derived from viewed but not completed. Events are counted in `lib/monitoring/funnelStore.ts` (in memory by default, Redis HyperLogLogs when `UPSTASH_REDIS_REST_*` is set, distinct sessions only, 90 day expiry) and shown at `/funnel`. The report maths is in `lib/monitoring/funnelReport.ts`; a later step can never show more sessions than an earlier one.
 
 ## Scope and priorities
 
