@@ -190,3 +190,4 @@ Never cut accessibility or tests to add a lower-priority feature.
 - Record notable decisions as short ADRs in `/docs/decisions`.
 - Keep `docs/technical-proposal.md` up to date if the approach changes.
 - Writing style for all docs, UI copy and PR descriptions: British English, plain and friendly, and no em dashes.
+- Commit messages and PR descriptions carry no AI attribution: no `Co-Authored-By` trailer for Claude and no "Generated with" footer.
