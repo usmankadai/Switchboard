@@ -1,0 +1,99 @@
+# Runs on every push to main and every pull request. A failure in any job
+# blocks the change: lint, types, unit tests, generated code, the journey
+# with axe accessibility checks, and the Lighthouse budgets.
+#
+# Every job works without secrets: GraphQL is mocked in Playwright, the
+# funnel store falls back to memory, and Sentry stays off.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch or pull request cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  checks:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      # Reads the pnpm version from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generated GraphQL code is up to date
+        run: |
+          pnpm codegen
+          git diff --exit-code -- generated || {
+            echo "::error::Generated code is out of date. Run pnpm codegen and commit the result."
+            exit 1
+          }
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  e2e:
+    name: End-to-end and accessibility (Playwright + axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Both Playwright projects (desktop and Pixel 7) run in Chromium.
+      - run: pnpm exec playwright install --with-deps chromium
+      # With CI set, Playwright starts the production build, not the dev server.
+      - run: pnpm build
+      - run: pnpm test:e2e
+      - name: Keep traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+
+  lighthouse:
+    name: Performance and accessibility budgets (Lighthouse CI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # lighthouserc.cjs runs Lighthouse in Playwright's Chromium.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - run: pnpm lhci
+      - name: Keep the Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/reports/
+          retention-days: 14

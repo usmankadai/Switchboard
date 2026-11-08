@@ -64,6 +64,7 @@ Everything Switchboard uses, what it is for, and where it lives. Versions are th
 | Lighthouse CI (`@lhci/cli`) | 0.15.1 | Performance and accessibility budgets | `lighthouserc.cjs` |
 | k6 | 2.3.0 | Load test of a traffic spike | `load-tests/` |
 | Chromium | Playwright build 1248 | Browser for Playwright and Lighthouse CI | installed by `playwright install chromium` |
+| GitHub Actions | | Runs lint, types, unit tests, Playwright with axe and Lighthouse CI on every push and pull request | `.github/workflows/ci.yml` |
 
 ## Standards and guidance followed
 

@@ -57,6 +57,18 @@ pnpm dev
 | `pnpm lhci` | Lighthouse CI performance budgets (run after `pnpm build`) |
 | `pnpm load` | k6 load test against a local production build (run after `pnpm build`; needs [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)) |
 
+## Continuous integration
+
+GitHub Actions ([ci.yml](.github/workflows/ci.yml)) runs on every push to `main` and every pull request. Three jobs run side by side, and any failure blocks the change:
+
+| Job | What it checks |
+| --- | --- |
+| Lint, types and unit tests | ESLint, TypeScript, Vitest, and that the generated GraphQL code matches the schema and queries |
+| End-to-end and accessibility | A production build, then every Playwright journey test on desktop and phone, each with an axe scan |
+| Lighthouse CI | The performance and accessibility budgets below, on every journey page |
+
+CI needs no secrets: GraphQL is mocked in Playwright, funnel counts fall back to memory, and Sentry stays off. The k6 load test is not in CI because it calls the live APIs; run it by hand before expected traffic.
+
 ## Performance
 
 Lighthouse CI, median of 5 runs, mobile with slow 4G and a 4x CPU slowdown applied for real:
@@ -149,4 +161,5 @@ Run on 27 October 2026, one Next.js process on a MacBook, k6 on the same machine
 - [x] Load test (k6) and write-up
 - [x] Funnel dashboard at `/funnel`
 - [x] A/B test of the tariff layout, with results on `/funnel`
+- [x] Continuous integration: lint, types, unit, end-to-end with axe, and Lighthouse budgets on every pull request
 - [ ] Storybook for the form kit

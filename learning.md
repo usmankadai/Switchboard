@@ -278,8 +278,10 @@ End-to-end tests:
 
 - [Vercel docs](https://vercel.com/docs) and [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
 - [The Twelve-Factor App](https://12factor.net/): why settings such as the Sentry DSN live in environment variables.
+- [GitHub Actions docs](https://docs.github.com/en/actions) and [building and testing Node.js](https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs): running every check automatically on each pull request.
+- [pnpm on CI](https://pnpm.io/continuous-integration) and [Playwright on CI](https://playwright.dev/docs/ci).
 
-**See it in this repo:** [.env.example](.env.example).
+**See it in this repo:** [.env.example](.env.example) and [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## 16. The energy data and domain
 
