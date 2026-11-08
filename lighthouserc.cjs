@@ -36,7 +36,10 @@ module.exports = {
         // CPU, the hardest realistic case for an onboarding journey, applied
         // for real rather than simulated.
         throttlingMethod: "devtools",
-        chromeFlags: "--headless=new",
+        // GitHub's Ubuntu runners block Chrome's sandbox, so Chrome will not
+        // start there without --no-sandbox. Playwright adds it for its own
+        // tests; Lighthouse does not. Only in CI, where pages are our own.
+        chromeFlags: process.env.CI ? "--headless=new --no-sandbox" : "--headless=new",
       },
     },
     assert: {

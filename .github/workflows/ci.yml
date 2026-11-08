@@ -95,5 +95,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports
-          path: .lighthouseci/reports/
+          # Raw results too, so a failure before the reports are written still leaves something to read.
+          path: .lighthouseci/
           retention-days: 14
