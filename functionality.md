@@ -105,6 +105,11 @@ Switchboard is an **independent concept**: a four-step electricity quote journey
 - **Page not found** with a link back to the start.
 - **Something went wrong** with **Try again**, keeping your saved answers.
 
+### Icons and link previews
+
+- **Browser tab and home screen icons** in Switchboard's own colours: a switch, flicked on.
+- **Link preview image.** Sharing a link on LinkedIn, Slack, WhatsApp or X shows a 1200 by 630 card with the name, a one-line pitch and the independence notice, with alt text. Built from `app/icon.svg` by `node scripts/make-images.mjs`.
+
 ## Accessibility
 
 Built to WCAG 2.2 AA and checked automatically by axe on every journey page, plus a Lighthouse accessibility score of 100 on every page.

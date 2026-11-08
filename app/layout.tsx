@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { IndependenceNotice } from "@/components/IndependenceNotice";
+import { siteUrl } from "@/lib/site-url";
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -11,13 +12,27 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+const description =
+  "An independent concept for a simple, accessible energy switching journey, using real tariff prices from the public Octopus Energy API.";
+
+// Icons (icon.svg, favicon.ico, apple-icon.png) and the link preview image
+// (opengraph-image.png) are files in /app, which Next.js adds to <head>.
+// scripts/make-images.mjs builds them from icon.svg.
 export const metadata: Metadata = {
+  metadataBase: siteUrl(),
   title: {
     default: "Switchboard: compare electricity tariffs",
     template: "%s | Switchboard",
   },
-  description:
-    "An independent concept for a simple, accessible energy switching journey, using real tariff prices from the public Octopus Energy API.",
+  description,
+  openGraph: {
+    type: "website",
+    siteName: "Switchboard",
+    locale: "en_GB",
+    title: "Switchboard: compare real electricity tariffs in two minutes",
+    description,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
